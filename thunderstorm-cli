@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+# Thunderstorm (THOR Service) API Command Line Client
+# Florian Roth, 2020
+
+__version__ = "0.0.4"
+
+import os
+import json
+import logging
+import platform
+import argparse
+import time
+import traceback
+from thunderstormAPI.thunderstorm import ThunderstormAPI
+
+LEVELS = {
+    'Debug': 1,
+    'Info': 2,
+    'Notice': 3,
+    'Error': 4,
+    'Warning': 5,
+    'Alert': 6
+}
+
+
+def print_matches(matches, min_level):
+    """
+    Pretty print a response that shows a match
+    :param fielpath:
+    :param match:
+    :param min_level:
+    :return:
+    """
+    for match in matches:
+        # Lookup the level value from the static LEVEL dictionary
+        m_level = LEVELS[match['level']]
+        # Original filename
+        orig_name = match['context']['file']
+        # If the match level is higher or equal to minimum level to report
+        if m_level >= min_level:
+            match_string = "Match found in FILE: %s MATCH: %s" % (orig_name, match)
+            if match['level']:
+                if match['level'] == 'Debug':
+                    Log.debug(match_string)
+                if match['level'] in ['Info', 'Notice']:
+                    Log.info(match_string)
+                if match['level'] in ['Warning', 'Alert']:
+                    Log.warning(match_string)
+
+
+if __name__ == '__main__':
+    # Parse Arguments
+    parser = argparse.ArgumentParser(description='THOR-Thunderstorm-CLI')
+
+    parser.add_argument('-t', '--thor_host', help='THOR service host', metavar='host', default='127.0.0.1')
+    parser.add_argument('-p', '--thor_port', help='THOR service port', metavar='port', default=8080)
+    parser.add_argument('--ssl', help='Use TLS/SSL (HTTPS)', metavar='use-ssl', default=False)
+    parser.add_argument('--strict_ssl', help='Use strict TLS/SSL (deny self-signed SSL certificates)',
+                        metavar='strict-ssl', default=False)
+
+    group_status = parser.add_argument_group(
+        '=======================================================================\nInfo')
+    group_status.add_argument('--status', action='store_true', default=False,
+                              help='Get status information from the service (processed samples, errors, runtime)')
+    group_status.add_argument('--info', action='store_true', default=False,
+                              help='Get general information (versions, license info)')
+
+    group_transmit = parser.add_argument_group(
+        '=======================================================================\nScan')
+    group_transmit.add_argument('-s', '--scan', action='store_true', default=False,
+                                help='Transmit sample file to get it scanned')
+    group_transmit.add_argument('-f', '--file', help='Sample file', metavar='sample')
+    group_transmit.add_argument('-d', '--dir', help='Sample directory', metavar='sample-dir')
+    group_transmit.add_argument('-n', '--threads', help='Number of threads', metavar='threads', default=12)
+    group_transmit.add_argument('-m', '--min_level',
+                                help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6',
+                                metavar='minimum-level', default=3)
+
+    group_proxy = parser.add_argument_group(
+        '=======================================================================\nProxy')
+    group_proxy.add_argument('-ps', '--proxy', help='proxy URL (e.g. https://my.proxy.net:8080)', metavar='proxy-url', default='')
+    group_proxy.add_argument('-pu', '--proxy_user', help='proxy user', metavar='proxy-user', default='')
+    group_proxy.add_argument('-pp', '--proxy_pass', help='proxy password', metavar='proxy-pass', default='')
+
+    parser.add_argument('--debug', action='store_true', default=False, help='Debug output')
+
+    args = parser.parse_args()
+
+    print(" ")
+    print("=======================================================================")
+    print("    ________                __            __                ")
+    print("   /_  __/ /  __ _____  ___/ /__ _______ / /____  ______ _  ")
+    print("    / / / _ \\/ // / _ \\/ _  / -_) __(_-</ __/ _ \\/ __/  ' \\ ")
+    print("   /_/ /_//_/\\_,_/_//_/\\_,_/\\__/_/ /___/\\__/\\___/_/ /_/_/_/ ")
+    print("   THOR Service API Client                                  ")
+    print("   Version %s, Florian Roth, 2020                        " % __version__)
+    print(" ")
+    print("=======================================================================")
+    print(" ")
+
+    # Logging
+    logFormatter = logging.Formatter("[%(levelname)-5.5s] %(message)s")
+    logFormatterRemote = logging.Formatter("{0} [%(levelname)-5.5s] %(message)s".format(platform.uname()[1]))
+    Log = logging.getLogger(__name__)
+    Log.setLevel(logging.INFO)
+    # Console Handler
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    Log.addHandler(consoleHandler)
+
+    # Debug
+    if args.debug:
+        Log.setLevel(logging.DEBUG)
+
+    use_ssl = "without"
+    if args.ssl:
+        use_ssl = "with"
+    Log.info("Using THOR Thunderstorm service on host %s port %s %s SSL/TLS" % (args.thor_host, args.thor_port, use_ssl))
+    thorapi = ThunderstormAPI(host=args.thor_host, port=args.thor_port, use_ssl=args.ssl, verify_ssl=args.strict_ssl)
+
+    # Set Proxy
+    if args.proxy:
+        thorapi.set_proxy(args.proxy, args.proxy_user, args.proxy_pass)
+
+    # Status
+    if args.status:
+        result = thorapi.get_status()
+        print(json.dumps(result, indent=4, sort_keys=True))
+
+    # Info
+    if args.info:
+        result = thorapi.get_info()
+        print(json.dumps(result, indent=4, sort_keys=True))
+
+    # Transmit samples to the scan service
+    if args.scan:
+        # Get some status information from the host
+        status = thorapi.get_status()
+        try:
+            av_scan_time = "N/A"
+            if 'avg_scan_time_ms' in status:
+                av_scan_time = "%sms" % status['avg_scan_time_ms']
+            Log.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
+                time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_s']))),
+                int(status['scanned_samples']),
+                av_scan_time
+            ))
+        except KeyError as e:
+            traceback.print_exc()
+            Log.error("JSON response contains unexpected content")
+            print(status)
+        # Scan a single file
+        if args.file:
+            result = thorapi.scan(args.file)
+            if args.debug:
+                Log.info("Submitting file %s for scanning ..." % args.file)
+            print_matches(result, min_level=int(args.min_level))
+        # Scan a complete directory
+        if args.dir:
+            Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
+            for path, directories, files in os.walk(args.dir):
+                dir_files = [os.path.join(path, fi) for fi in files]
+                if args.debug:
+                    Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
+                results = thorapi.scan_multi(filelist=dir_files, num_threads=int(args.threads))
+                #print(json.dumps(results, indent=4))
+                for result in results:
+                    if len(result) != 0:
+                        # Match found
+                        print_matches(result, min_level=int(args.min_level))
+        if not args.file and not args.dir:
+            Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")

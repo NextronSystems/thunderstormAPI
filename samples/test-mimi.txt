@@ -1,0 +1,5 @@
+logonpasswords::
+sekurlsa::logonpasswords
+ERROR_KUHL
+ gET-ChiLdiTeM
+ -ma lsass.exe
