@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.4"
+__version__ = "0.0.6"
 
 API_CHECK_URI = '/api/check'
 API_STATUS_URI = '/api/status'
@@ -78,7 +78,7 @@ class ThunderstormAPI(object):
         try:
             with open(filepath, 'rb') as f:
                 headers = {'User-Agent': "THOR Thunderstorm API Client %s" % __version__}
-                files = {"file": ('sample', f.read(), 'application/octet-stream')}
+                files = {"file": (filepath, f.read(), 'application/octet-stream')}
                 try:
                     resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
                                          verify=self.verify_ssl)
@@ -91,7 +91,7 @@ class ThunderstormAPI(object):
 
                 # Process response
                 try:
-                    # Python 3.5 compatibilty
+                    # Python 3.5 compatibility
                     content = resp.content
                     if isinstance(resp.content, (bytes, bytearray)):
                         content = resp.content.decode('utf-8')
@@ -99,7 +99,8 @@ class ThunderstormAPI(object):
                     result = json.loads(content)
                     # Add the original file
                     if len(result) > 0:
-                        result[0]['context']['file'] = filepath
+                        for r in result:
+                            r['context']['file'] = filepath
                     #print(json.dumps(result, indent=4))
                     return result
                 except KeyError as e:
@@ -139,9 +140,13 @@ class ThunderstormAPI(object):
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_STATUS_URI)
-        r = requests.get(url,
-                         proxies=self.proxies,
-                         verify=self.verify_ssl)
+        try:
+            r = requests.get(url,
+                             proxies=self.proxies,
+                             verify=self.verify_ssl)
+        except requests.exceptions.ConnectionError:
+            traceback.print_exc()
+            print("Cannot connect to %s" % url)
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
@@ -154,9 +159,13 @@ class ThunderstormAPI(object):
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_INFO_URI)
-        r = requests.get(url,
-                         proxies=self.proxies,
-                         verify=self.verify_ssl)
+        try:
+            r = requests.get(url,
+                             proxies=self.proxies,
+                             verify=self.verify_ssl)
+        except requests.exceptions.ConnectionError:
+            traceback.print_exc()
+            print("Cannot connect to %s" % url)
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:

@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.4"
+__version__ = "0.0.6"
 
 import os
 import json
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     group_transmit.add_argument('-d', '--dir', help='Sample directory', metavar='sample-dir')
     group_transmit.add_argument('-n', '--threads', help='Number of threads', metavar='threads', default=12)
     group_transmit.add_argument('-m', '--min_level',
-                                help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6',
+                                help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)',
                                 metavar='minimum-level', default=3)
 
     group_proxy = parser.add_argument_group(
@@ -95,6 +95,7 @@ if __name__ == '__main__':
     print("   THOR Service API Client                                  ")
     print("   Version %s, Florian Roth, 2020                        " % __version__)
     print(" ")
+
     print("=======================================================================")
     print(" ")
 

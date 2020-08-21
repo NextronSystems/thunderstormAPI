@@ -44,7 +44,7 @@ Scan:
   -n threads, --threads threads
                         Number of threads
   -m minimum-level, --min_level minimum-level
-                        Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6
+                        Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)
 
 =======================================================================
 Proxy:
@@ -58,10 +58,19 @@ Proxy:
 
 ### Examples
 
-Get information on a running THOR Thunderstorm service on `my-thor.local`
+#### Server
+
+On a server you would run THOR in service mode as follows
+```bash
+./thor-linux-64 --server --server-host 10.0.0.14 --trace --threadcount 40
+```
+
+#### Client
+
+Get information on a running THOR Thunderstorm service on `10.0.0.14`
 
 ```bash
-./thunderstorm-cli --info -h my-thor.local
+./thunderstorm-cli --info -h 10.0.0.14
 ```
 
 Result 
@@ -77,29 +86,29 @@ Result
 }
 ```
 
-Submit a single sample to THOR Thunderstorm service running on `my-thor.local`
+Submit a single sample to THOR Thunderstorm service running on `10.0.0.4`
 
 ```bash
-./thunderstorm-cli --scan -h my-thor.local -f ./samples/webshell.txt
+./thunderstorm-cli --scan -h 10.0.0.14 -f ./samples/webshell.txt
 ```
 
 Result
 ```
-[INFO ] Using THOR Thunderstorm service on host 127.0.0.1 port 8081 without SSL/TLS
+[INFO ] Using THOR Thunderstorm service on host 10.0.0.14 port 8080 without SSL/TLS
 [INFO ] Thunderstorm service stats UPTIME: 00h:45m:57s SCANNED_SAMPLES: 60 AVG_SCAN_TIME: 33ms
 [INFO ] Submitting file ./samples/webshell.txt for scanning ...
 [WARNI] Match found in FILE: ./samples/webshell.txt MATCH: {'level': 'Alert', 'module': 'Filescan', 'message': 'Malware file found', 'score': 140, 'context': {'ext': '', 'file': './samples/webshell.txt', 'firstBytes': '3c3f70687020406576616c28245f4745545b636d / <?php @eval($_GET[cm', 'md5': '6f70c1a517db1818e0234ba63185e6e9', 'sha1': '2f13649ccd9de947fd28616d73cc1387674a2df0', 'sha256': '5906cb00cbe1c108ff4a0e17f1c76606c57364467352ce4f986271e40bd5c1cc', 'size': 58, 'type': 'PHP'}, 'matches': [{'matched': ['php @eval($_POST['], 'reason': 'China Chopper Webshells - PHP and ASPX', 'ref': 'https://www.fireeye.com/content/dam/legacy/resources/pdfs/fireeye-china-chopper-report.pdf', 'ruledate': '2015-03-10', 'rulename': 'ChinaChopper_Generic', 'subscore': 75, 'tags': ['CHINA', 'GEN', 'T1100', 'WEBSHELL']}, {'matched': ['<?php', '$_GET[', 'eval('], 'reason': 'Detects suspiciously small PHP file that receives a parameter and runs a eval statement', 'ref': 'https://github.com/qiyeboy/kill_webshell_detect', 'ruledate': '2020-07-31', 'rulename': 'SUSP_WEBSHELL_PHP_Tiny_Indicators_Jul20', 'subscore': 65, 'tags': ['FILE', 'SUSP', 'T1100', 'T1136', 'WEBSHELL']}]}
 ```
 
-Submit all samples within a directory (recursive) to THOR Thunderstorm service running on `my-thor.local`
+Submit all samples within a directory (recursive) to THOR Thunderstorm service running on `10.0.0.14`
 
 ```bash
-./thunderstorm-cli --scan -h my-thor.local -d ./samples/
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/
 ```
 
 Result
 ```
-[INFO ] Using THOR Thunderstorm service on host 127.0.0.1 port 8081 without SSL/TLS
+[INFO ] Using THOR Thunderstorm service on host 10.0.0.14 port 8080 without SSL/TLS
 [INFO ] Thunderstorm service stats UPTIME: 00h:59m:15s SCANNED_SAMPLES: 64 AVG_SCAN_TIME: 34ms
 [INFO ] Submitting samples from ./samples/ using 12 threads
 [INFO ] Scanning path: ./samples/ with 3 elements
