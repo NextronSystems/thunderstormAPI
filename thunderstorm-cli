@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 import os
 import json
@@ -11,6 +11,7 @@ import platform
 import argparse
 import time
 import traceback
+import urllib3
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 LEVELS = {
@@ -21,6 +22,8 @@ LEVELS = {
     'Warning': 5,
     'Alert': 6
 }
+
+urllib3.disable_warnings()
 
 
 def print_matches(matches, min_level):
@@ -54,7 +57,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-t', '--thor_host', help='THOR service host', metavar='host', default='127.0.0.1')
     parser.add_argument('-p', '--thor_port', help='THOR service port', metavar='port', default=8080)
-    parser.add_argument('--ssl', help='Use TLS/SSL (HTTPS)', metavar='use-ssl', default=False)
+    parser.add_argument('--ssl', action='store_true', help='Use TLS/SSL (HTTPS)', default=False)
     parser.add_argument('--strict_ssl', help='Use strict TLS/SSL (deny self-signed SSL certificates)',
                         metavar='strict-ssl', default=False)
 

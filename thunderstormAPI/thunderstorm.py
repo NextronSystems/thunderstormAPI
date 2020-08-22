@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 API_CHECK_URI = '/api/check'
 API_STATUS_URI = '/api/status'
@@ -84,6 +84,9 @@ class ThunderstormAPI(object):
                                          verify=self.verify_ssl)
                 except Exception as e:
                     traceback.print_exc()
+                    print(str(e))
+                    return {'error': str(e),
+                            'message': 'Cannot submit file'}
 
                 # Warning
                 if resp.status_code != 200:
@@ -112,6 +115,7 @@ class ThunderstormAPI(object):
                     return {'error': str(e), 'message': resp.content[:128].decode('ascii')}
                 except Exception as e:
                     traceback.print_exc()
+                    return {'error': str(e), 'message': 'Unexpected error'}
 
         except FileNotFoundError as e:
             traceback.print_exc()
@@ -144,9 +148,10 @@ class ThunderstormAPI(object):
             r = requests.get(url,
                              proxies=self.proxies,
                              verify=self.verify_ssl)
-        except requests.exceptions.ConnectionError:
-            traceback.print_exc()
+        except requests.exceptions.ConnectionError as e:
+            #traceback.print_exc()
             print("Cannot connect to %s" % url)
+            return {"status": "error", "message": str(e), "content": "-"}
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
@@ -163,9 +168,10 @@ class ThunderstormAPI(object):
             r = requests.get(url,
                              proxies=self.proxies,
                              verify=self.verify_ssl)
-        except requests.exceptions.ConnectionError:
-            traceback.print_exc()
+        except requests.exceptions.ConnectionError as e:
+            #traceback.print_exc()
             print("Cannot connect to %s" % url)
+            return {"status": "error", "message": str(e), "content": "-"}
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
