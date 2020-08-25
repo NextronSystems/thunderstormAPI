@@ -11,6 +11,7 @@ import platform
 import argparse
 import time
 import traceback
+import fnmatch
 import urllib3
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
@@ -36,19 +37,26 @@ def print_matches(matches, min_level):
     """
     for match in matches:
         # Lookup the level value from the static LEVEL dictionary
+        if not 'level' in match:
+            Log.error("Something is wrong with the match object! Cannot process it: %s" % match)
+            continue
         m_level = LEVELS[match['level']]
         # Original filename
         orig_name = match['context']['file']
         # If the match level is higher or equal to minimum level to report
         if m_level >= min_level:
-            match_string = "Match found in FILE: %s MATCH: %s" % (orig_name, match)
+            match_string = "Result returned for FILE: %s MATCH: %s" % (orig_name, match)
             if match['level']:
                 if match['level'] == 'Debug':
                     Log.debug(match_string)
-                if match['level'] in ['Info', 'Notice']:
+                if match['level'] == 'Info':
+                    Log.debug(match_string)
+                if match['level'] == 'Notice':
                     Log.info(match_string)
-                if match['level'] in ['Warning', 'Alert']:
+                if match['level'] == 'Warning':
                     Log.warning(match_string)
+                if match['level'] == 'Alert':
+                    Log.critical(match_string)
 
 
 if __name__ == '__main__':
@@ -74,10 +82,15 @@ if __name__ == '__main__':
                                 help='Transmit sample file to get it scanned')
     group_transmit.add_argument('-f', '--file', help='Sample file', metavar='sample')
     group_transmit.add_argument('-d', '--dir', help='Sample directory', metavar='sample-dir')
+    group_transmit.add_argument('-e', '--exclude', action='append', nargs='+',
+                                help='Exclude pattern (can be used multiple times)')
+    group_transmit.add_argument('-i', '--include', action='append', nargs='+',
+                                help='Include pattern (can be used multiple times)')
     group_transmit.add_argument('-n', '--threads', help='Number of threads', metavar='threads', default=12)
     group_transmit.add_argument('-m', '--min_level',
                                 help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)',
                                 metavar='minimum-level', default=3)
+
 
     group_proxy = parser.add_argument_group(
         '=======================================================================\nProxy')
@@ -86,6 +99,7 @@ if __name__ == '__main__':
     group_proxy.add_argument('-pp', '--proxy_pass', help='proxy password', metavar='proxy-pass', default='')
 
     parser.add_argument('--debug', action='store_true', default=False, help='Debug output')
+    parser.add_argument('--trace', action='store_true', default=False, help='Trace output')
 
     args = parser.parse_args()
 
@@ -163,14 +177,45 @@ if __name__ == '__main__':
         if args.dir:
             Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
             for path, directories, files in os.walk(args.dir):
-                dir_files = [os.path.join(path, fi) for fi in files]
+                filtered_files = files
+                # Exclude / Include
+                if args.exclude:
+                    for e in args.exclude:
+                        exclude = e[0]
+                        if args.trace:
+                            print("Exclude: %s" % exclude)
+                        matching = fnmatch.filter(files, exclude)
+                        if args.trace:
+                            print("Exclude: %s" % matching)
+                        filtered_files = [exclude for exclude in files if exclude not in matching]
+                if args.include:
+                    for i in args.include:
+                        include = i[0]
+                        if args.trace:
+                            print("Include: %s" % include)
+                        matching = fnmatch.filter(files, include)
+                        if args.trace:
+                            print("Including: %s" % matching)
+                        filtered_files = [include for include in files if include in matching]
+
+                # List of files to process
+                dir_files = [os.path.join(path, fi) for fi in filtered_files]
+
+                # Starting the scan
                 if args.debug:
                     Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
-                results = thorapi.scan_multi(filelist=dir_files, num_threads=int(args.threads))
-                #print(json.dumps(results, indent=4))
+
+                # Scan List of Files
+                results = thorapi.scan_multi(filelist=dir_files, num_threads=int(args.threads), trace=args.trace)
+
+                # Process the results
                 for result in results:
                     if len(result) != 0:
-                        # Match found
-                        print_matches(result, min_level=int(args.min_level))
+                        if args.trace:
+                            print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
+                        if 'error' not in result:
+                            # Match found
+                            print_matches(result, min_level=int(args.min_level))
+
         if not args.file and not args.dir:
             Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")

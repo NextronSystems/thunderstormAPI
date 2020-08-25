@@ -8,6 +8,7 @@
 import json
 import requests
 import traceback
+from os.path import basename
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
@@ -67,10 +68,11 @@ class ThunderstormAPI(object):
             u.netloc
         )}
 
-    def scan(self, filepath):
+    def scan(self, filepath, trace=False):
         """
         Scan a certain file
         :param filepath:
+        :param trace:
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_CHECK_URI)
@@ -80,8 +82,10 @@ class ThunderstormAPI(object):
                 headers = {'User-Agent': "THOR Thunderstorm API Client %s" % __version__}
                 files = {"file": (filepath, f.read(), 'application/octet-stream')}
                 try:
+                    if trace:
+                        print("SUBMIT > %s" % filepath)
                     resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
-                                         verify=self.verify_ssl)
+                                         verify=self.verify_ssl, stream=True)
                 except Exception as e:
                     traceback.print_exc()
                     print(str(e))
@@ -99,13 +103,20 @@ class ThunderstormAPI(object):
                     if isinstance(resp.content, (bytes, bytearray)):
                         content = resp.content.decode('utf-8')
 
+                    # Process the JSON response
                     result = json.loads(content)
+
+                    if trace:
+                        print("RESP < %s" % filepath)
+                        print("RESULT %s : %s" % (basename(filepath), result))
+
                     # Add the original file
                     if len(result) > 0:
                         for r in result:
                             r['context']['file'] = filepath
-                    #print(json.dumps(result, indent=4))
+
                     return result
+
                 except KeyError as e:
                     return {'error': str(e),
                             'message': 'Malformed JSON returned from the Thunderstorm service'}
@@ -114,24 +125,24 @@ class ThunderstormAPI(object):
                 except json.JSONDecodeError as e:
                     return {'error': str(e), 'message': resp.content[:128].decode('ascii')}
                 except Exception as e:
-                    traceback.print_exc()
                     return {'error': str(e), 'message': 'Unexpected error'}
 
         except FileNotFoundError as e:
             traceback.print_exc()
             return {'error': str(e), 'message': 'Cannot open file %s' % filepath}
 
-    def scan_multi(self, filelist, num_threads=16):
+    def scan_multi(self, filelist, num_threads=16, trace=False):
         """
         Multi-threaded scan of a set of files
         :param filelist:
         :param num_threads:
+        :param trace:
         :return:
         """
         threads = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for file in filelist:
-                threads.append(executor.submit(self.scan, file))
+                threads.append(executor.submit(self.scan, filepath=file, trace=trace))
 
         results = []
         for task in as_completed(threads):
