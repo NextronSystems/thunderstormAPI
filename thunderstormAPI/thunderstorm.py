@@ -8,14 +8,15 @@
 import json
 import requests
 import traceback
-from os.path import basename
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.7"
+__version__ = "0.0.9"
 
 API_CHECK_URI = '/api/check'
+API_SUBMIT_URI_ASYNC = '/api/checkAsync'
+API_CHECK_URI_ASYNC = '/api/getAsyncResults'
 API_STATUS_URI = '/api/status'
 API_INFO_URI = '/api/info'
 
@@ -68,14 +69,21 @@ class ThunderstormAPI(object):
             u.netloc
         )}
 
-    def scan(self, filepath, trace=False):
+    def scan(self, filepath, asyn=False, trace=False):
         """
         Scan a certain file
-        :param filepath:
-        :param trace:
+        :param filelist: list of absolute file paths
+        :param asyn: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+        :param trace: more verbose than debug
         :return:
         """
-        url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_CHECK_URI)
+
+        # Synchronous or Asynchronous mode
+        api_endpoint = API_CHECK_URI
+        if asyn:
+            api_endpoint = API_SUBMIT_URI_ASYNC
+        # Compose the URL
+        url = "{}://{}:{}{}".format(self.method, self.host, self.port, api_endpoint)
 
         try:
             with open(filepath, 'rb') as f:
@@ -108,12 +116,19 @@ class ThunderstormAPI(object):
 
                     if trace:
                         print("RESP < %s" % filepath)
-                        print("RESULT %s : %s" % (basename(filepath), result))
 
                     # Add the original file
-                    if len(result) > 0:
-                        for r in result:
-                            r['context']['file'] = filepath
+                    # in synchronous results
+                    if not asyn:
+                        if len(result) > 0:
+                            for r in result:
+                                r['context']['file'] = filepath
+                    # in asynchronous results
+                    else:
+                        result['file'] = filepath
+
+                    if trace:
+                        print("RESULT: %s" % result)
 
                     return result
 
@@ -131,23 +146,50 @@ class ThunderstormAPI(object):
             traceback.print_exc()
             return {'error': str(e), 'message': 'Cannot open file %s' % filepath}
 
-    def scan_multi(self, filelist, num_threads=16, trace=False):
+    def scan_multi(self, filelist, num_threads=16, asyn=False, trace=False):
         """
         Multi-threaded scan of a set of files
-        :param filelist:
-        :param num_threads:
-        :param trace:
+        :param filelist: list of absolute file paths
+        :param num_threads: number of threads
+        :param asyn: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+        :param trace: more verbose than debug
         :return:
         """
         threads = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for file in filelist:
-                threads.append(executor.submit(self.scan, filepath=file, trace=trace))
+                threads.append(executor.submit(self.scan, filepath=file, asyn=asyn, trace=trace))
 
         results = []
         for task in as_completed(threads):
             results.append(task.result())
         return results
+
+    def get_async_result(self, id):
+        """
+        Retrieves a result for a given sample id that has previous been submitted in asynchronous mode
+        :param id:
+        :return:
+        """
+        url = "{}://{}:{}{}?id={}".format(self.method, self.host, self.port, API_CHECK_URI_ASYNC, id)
+        try:
+            r = requests.get(url,
+                             proxies=self.proxies,
+                             verify=self.verify_ssl)
+            if r.status_code != 200:
+                return {'status': 'error', 'status_code': r.status_code, 'message': str(r.content)}
+        except requests.exceptions.ConnectionError as e:
+            print("Cannot connect to %s" % url)
+            return {"status": "error", "message": str(e), "content": "-"}
+        try:
+            jresult = json.loads(r.text)
+            # Wrong JSON response
+            if 'status' not in jresult:
+                return {"status": "error", "message": "JSON content is not the expected one",
+                        "content": json.dumps(str(r.content[:128]))}
+        except json.JSONDecodeError as e:
+            return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
+        return jresult
 
     def get_status(self):
         """
@@ -160,13 +202,16 @@ class ThunderstormAPI(object):
                              proxies=self.proxies,
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
-            #traceback.print_exc()
             print("Cannot connect to %s" % url)
             return {"status": "error", "message": str(e), "content": "-"}
         try:
             jresult = json.loads(r.text)
+            # Wrong JSON response
+            if 'uptime_s' not in jresult:
+                return {"status": "error", "message": "JSON content is not the expected one",
+                        "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
-            jresult = {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
+            return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         return jresult
 
     def get_info(self):
@@ -180,11 +225,10 @@ class ThunderstormAPI(object):
                              proxies=self.proxies,
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
-            #traceback.print_exc()
             print("Cannot connect to %s" % url)
             return {"status": "error", "message": str(e), "content": "-"}
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
-            jresult = {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
+            return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         return jresult

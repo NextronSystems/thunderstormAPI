@@ -13,8 +13,8 @@ The Thunderstorm command line interface (CLI) is a pre-written tool that impleme
 ### Usage
 
 ```bash
-usage: thunderstorm-cli [-h] [-t host] [-p port] [--ssl use-ssl] [--strict_ssl strict-ssl] [--status] [--info] [-s] [-f sample] [-d sample-dir]
-                        [-n threads] [-m minimum-level] [-ps proxy-url] [-pu proxy-user] [-pp proxy-pass] [--debug]
+usage: thunderstorm-cli [-h] [-t host] [-p port] [--ssl] [--strict_ssl strict-ssl] [--status] [--info] [--result] [-r sample-id] [-s] [-f sample] [-d sample-dir] [-e EXCLUDE [EXCLUDE ...]]
+                        [-i INCLUDE [INCLUDE ...]] [-n threads] [-m minimum-level] [--asyn] [-ps proxy-url] [-pu proxy-user] [-pp proxy-pass] [--debug] [--trace]
 
 THOR-Thunderstorm-CLI
 
@@ -24,15 +24,19 @@ optional arguments:
                         THOR service host
   -p port, --thor_port port
                         THOR service port
-  --ssl use-ssl         Use TLS/SSL (HTTPS)
+  --ssl                 Use TLS/SSL (HTTPS)
   --strict_ssl strict-ssl
                         Use strict TLS/SSL (deny self-signed SSL certificates)
   --debug               Debug output
+  --trace               Trace output
 
 =======================================================================
 Info:
   --status              Get status information from the service (processed samples, errors, runtime)
   --info                Get general information (versions, license info)
+  --result              Get information on a certain sample id
+  -r sample-id, --id sample-id
+                        Sample ID returned in asynchronous result
 
 =======================================================================
 Scan:
@@ -41,10 +45,15 @@ Scan:
                         Sample file
   -d sample-dir, --dir sample-dir
                         Sample directory
+  -e EXCLUDE [EXCLUDE ...], --exclude EXCLUDE [EXCLUDE ...]
+                        Exclude pattern (can be used multiple times)
+  -i INCLUDE [INCLUDE ...], --include INCLUDE [INCLUDE ...]
+                        Include pattern (can be used multiple times)
   -n threads, --threads threads
                         Number of threads
   -m minimum-level, --min_level minimum-level
                         Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)
+  --asyn                Asynchronous transmission (server just returns a send receipt and not a result, which allows a much fast transmission)
 
 =======================================================================
 Proxy:
@@ -150,10 +159,12 @@ Returns
 ```json
 {
     "allowed_samples_per_hour": 0,
-    "sigma_version": "0.17.0-383-gd73447c1",
-    "signature_version": "2020/08/13-125157",
-    "thor_timestamp": "2020-08-17 07:04:36",
+    "license_expiration_date": "2021/01/30",
+    "sigma_version": "0.18.1",
+    "signature_version": "2020/08/31-164212",
+    "thor_timestamp": "2020-09-03 07:39:30",
     "thor_version": "10.6.0",
+    "threads": 40,
     "yara_version": "4.0.2"
 }
 ```
@@ -170,13 +181,15 @@ thorapi.get_status()
 Returns
 ```json
 {
-    "avg_scan_time_ms": 33,
+    "avg_scan_time_ms": 494,
+    "avg_total_time_ms": 495,
     "denied_request_proportion": 0,
     "denied_requests": 0,
+    "queued_async_requests": 70854,
     "quota_wait_time_ms": 0,
     "quota_waits": 0,
-    "scanned_samples": 54,
-    "uptime_s": 2270.398178614
+    "scanned_samples": 109230,
+    "uptime_s": 1419
 }
 ```
 
@@ -491,5 +504,85 @@ Returns
             ]
         }
     ]
+]
+```
+
+### Submit a List of Samples (Asynchronous)
+
+Submit samples in asnychronous mode, which has the advantage of faster samples submission and avoiding service overload but doesn't return a scan result to the submitting client. 
+
+```python 
+from thunderstormAPI.thunderstorm import ThunderstormAPI
+
+SAMPLES = '/software/set1'
+samples = [path.join(SAMPLE_DIR, f) for f in listdir(SAMPLE_DIR)]
+
+thorapi = ThunderstormAPI(host='thunderstorm.local')
+
+thorapi.scan_multi(samples, asyn=True)
+```
+
+```json
+[
+    {
+        "file": "/software/set1/DVD Maker/sonicsptransform.ax",
+        "id": 360715
+    },
+    {
+        "file": "/software/set1/DVD Maker/directshowtap.ax",
+        "id": 360711
+    },
+    {
+        "file": "/software/set1/DVD Maker/bod_r.TTF",
+        "id": 360716
+    },
+    {
+        "file": "/software/set1/DVD Maker/rtstreamsink.ax",
+        "id": 360717
+    },
+    {
+        "file": "/software/set1/DVD Maker/rtstreamsource.ax",
+        "id": 360709
+    },
+    {
+        "file": "/software/set1/DVD Maker/PipeTran.dll",
+        "id": 360708
+    },
+    {
+        "file": "/software/set1/DVD Maker/soniccolorconverter.ax",
+        "id": 360707
+    },
+    {
+        "file": "/software/set1/DVD Maker/WMM2CLIP.dll",
+        "id": 360714
+    },
+    {
+        "file": "/software/set1/DVD Maker/DVDMaker.exe",
+        "id": 360718
+    },
+    {
+        "file": "/software/set1/DVD Maker/audiodepthconverter.ax",
+        "id": 360706
+    },
+    {
+        "file": "/software/set1/DVD Maker/Pipeline.dll",
+        "id": 360713
+    },
+    {
+        "file": "/software/set1/DVD Maker/offset.ax",
+        "id": 360710
+    },
+    {
+        "file": "/software/set1/DVD Maker/SecretST.TTF",
+        "id": 360712
+    },
+    {
+        "file": "/software/set1/DVD Maker/fieldswitch.ax",
+        "id": 360705
+    },
+    {
+        "file": "/software/set1/DVD Maker/Eurosti.TTF",
+        "id": 360704
+    }
 ]
 ```

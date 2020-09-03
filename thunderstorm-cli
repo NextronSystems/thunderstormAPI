@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.7"
+__version__ = "0.0.9"
 
 import os
 import json
@@ -75,6 +75,9 @@ if __name__ == '__main__':
                               help='Get status information from the service (processed samples, errors, runtime)')
     group_status.add_argument('--info', action='store_true', default=False,
                               help='Get general information (versions, license info)')
+    group_status.add_argument('--result', action='store_true', default=False,
+                              help='Get information on a certain sample id')
+    group_status.add_argument('-r', '--id', help='Sample ID returned in asynchronous result', metavar='sample-id')
 
     group_transmit = parser.add_argument_group(
         '=======================================================================\nScan')
@@ -90,7 +93,9 @@ if __name__ == '__main__':
     group_transmit.add_argument('-m', '--min_level',
                                 help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)',
                                 metavar='minimum-level', default=3)
-
+    group_transmit.add_argument('--asyn', action='store_true', default=False,
+                                help='Asynchronous transmission (server just returns a send receipt and not a result, '
+                                     'which allows a much fast transmission)')
 
     group_proxy = parser.add_argument_group(
         '=======================================================================\nProxy')
@@ -140,6 +145,10 @@ if __name__ == '__main__':
     if args.proxy:
         thorapi.set_proxy(args.proxy, args.proxy_user, args.proxy_pass)
 
+    # If no option has been selected
+    if not args.status and not args.info and not args.scan and not args.result:
+        print("You have to select one these actions: --info, --status or --scan")
+
     # Status
     if args.status:
         result = thorapi.get_status()
@@ -150,72 +159,94 @@ if __name__ == '__main__':
         result = thorapi.get_info()
         print(json.dumps(result, indent=4, sort_keys=True))
 
+    # Sample Info
+    if args.result:
+        if args.id:
+            result = thorapi.get_async_result(id=args.id)
+            print(json.dumps(result, indent=4, sort_keys=True))
+        else:
+            print("Cannot query for a reuslt without an id (--id X)")
+
     # Transmit samples to the scan service
     if args.scan:
         # Get some status information from the host
         status = thorapi.get_status()
-        try:
-            av_scan_time = "N/A"
-            if 'avg_scan_time_ms' in status:
-                av_scan_time = "%sms" % status['avg_scan_time_ms']
-            Log.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
-                time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_s']))),
-                int(status['scanned_samples']),
-                av_scan_time
-            ))
-        except KeyError as e:
-            traceback.print_exc()
-            Log.error("JSON response contains unexpected content")
-            print(status)
-        # Scan a single file
-        if args.file:
-            result = thorapi.scan(args.file)
-            if args.debug:
-                Log.info("Submitting file %s for scanning ..." % args.file)
-            print_matches(result, min_level=int(args.min_level))
-        # Scan a complete directory
-        if args.dir:
-            Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
-            for path, directories, files in os.walk(args.dir):
-                filtered_files = files
-                # Exclude / Include
-                if args.exclude:
-                    for e in args.exclude:
-                        exclude = e[0]
-                        if args.trace:
-                            print("Exclude: %s" % exclude)
-                        matching = fnmatch.filter(files, exclude)
-                        if args.trace:
-                            print("Exclude: %s" % matching)
-                        filtered_files = [exclude for exclude in files if exclude not in matching]
-                if args.include:
-                    for i in args.include:
-                        include = i[0]
-                        if args.trace:
-                            print("Include: %s" % include)
-                        matching = fnmatch.filter(files, include)
-                        if args.trace:
-                            print("Including: %s" % matching)
-                        filtered_files = [include for include in files if include in matching]
-
-                # List of files to process
-                dir_files = [os.path.join(path, fi) for fi in filtered_files]
-
-                # Starting the scan
+        if 'status' in status:
+            if status['status'] == 'error':
+                Log.error("Error: %s" % status['message'])
+        else:
+            try:
+                av_scan_time = "N/A"
+                if 'avg_scan_time_ms' in status:
+                    av_scan_time = "%sms" % status['avg_scan_time_ms']
+                Log.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
+                    time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_s']))),
+                    int(status['scanned_samples']),
+                    av_scan_time
+                ))
+            except KeyError as e:
+                traceback.print_exc()
+                Log.error("JSON response contains unexpected content")
+                print(status)
+            # Scan a single file
+            if args.file:
+                result = thorapi.scan(args.file, asyn=args.asyn, trace=args.trace)
                 if args.debug:
-                    Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
+                    Log.info("Submitting file %s for scanning ..." % args.file)
+                print_matches(result, min_level=int(args.min_level))
+            # Scan a complete directory
+            if args.dir:
+                Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
+                for path, directories, files in os.walk(args.dir):
+                    filtered_files = files
+                    # Exclude / Include
+                    if args.exclude:
+                        for e in args.exclude:
+                            exclude = e[0]
+                            if args.trace:
+                                print("Exclude: %s" % exclude)
+                            matching = fnmatch.filter(files, exclude)
+                            if args.trace:
+                                print("Exclude: %s" % matching)
+                            filtered_files = [exclude for exclude in files if exclude not in matching]
+                    if args.include:
+                        for i in args.include:
+                            include = i[0]
+                            if args.trace:
+                                print("Include: %s" % include)
+                            matching = fnmatch.filter(files, include)
+                            if args.trace:
+                                print("Including: %s" % matching)
+                            filtered_files = [include for include in files if include in matching]
 
-                # Scan List of Files
-                results = thorapi.scan_multi(filelist=dir_files, num_threads=int(args.threads), trace=args.trace)
+                    # List of files to process
+                    dir_files = [os.path.join(path, fi) for fi in filtered_files]
 
-                # Process the results
-                for result in results:
-                    if len(result) != 0:
-                        if args.trace:
-                            print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
-                        if 'error' not in result:
-                            # Match found
-                            print_matches(result, min_level=int(args.min_level))
+                    # Starting the scan
+                    if args.debug:
+                        Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
+
+                    # Scan List of Files
+                    results = thorapi.scan_multi(
+                        filelist=dir_files,
+                        num_threads=int(args.threads),
+                        asyn=args.asyn,
+                        trace=args.trace
+                    )
+
+                    # Only process the results in synchronous mode
+                    if not args.asyn:
+                        # Process the results
+                        for result in results:
+                            if len(result) != 0:
+                                if args.trace:
+                                    print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
+                                if 'error' not in result:
+                                    # Match found
+                                    print_matches(result, min_level=int(args.min_level))
+                    else:
+                        pass
+                        #print(json.dumps(results, indent=4, sort_keys=True))
 
         if not args.file and not args.dir:
             Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")
