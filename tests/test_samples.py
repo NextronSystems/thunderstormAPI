@@ -7,49 +7,13 @@ from thunderstormAPI.thunderstorm import ThunderstormAPI
 PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 THOR_THUNDERSTORM_HOST = 'ygdrasil.nextron'
 THOR_THUNDERSTORM_PORT = '8080'
-SAMPLE_1 = path.join(PROGRAM_DIR, 'samples/test-mimi.txt')
 SAMPLE_DIR = path.join(PROGRAM_DIR, 'samples')
 SAMPLES_1 = [path.join(SAMPLE_DIR, f) for f in listdir(SAMPLE_DIR) if isfile(join(SAMPLE_DIR, f))]
 REACT_DIR = path.join(SAMPLE_DIR, 'react')
 SAMPLES_2 = [path.join(REACT_DIR, f) for f in listdir(REACT_DIR) if isfile(join(REACT_DIR, f))]
 
 
-def test_status():
-    """
-    Tests the status response from the Thunderstorm servicess
-    :return:
-    """
-    t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
-    result = t.get_status()
-    assert result['uptime_s'] > 0
-
-
-def test_info():
-    """
-    Tests the info response from the Thunderstorm service
-    :return:
-    """
-    t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
-    result = t.get_info()
-    assert result
-    assert result['thor_version']
-
-
-def test_sample():
-    """
-    Tests the single sample submission
-    :return:
-    """
-    t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
-    status1 = t.get_status()
-    result = t.scan(SAMPLE_1)
-    status2 = t.get_status()
-    assert result
-    assert len(result) > 0
-    assert int(status1['scanned_samples']) < int(status2['scanned_samples'])
-
-
-def test_sample_multi():
+def test_sample_multi_sync_1():
     """
     Tests the multi-threaded sample submission
     :return:
@@ -62,23 +26,21 @@ def test_sample_multi():
     assert len(results) > 0
     assert int(status1['scanned_samples']) < int(status2['scanned_samples'])
     for r in results:
-        result = r
-        assert result != []
+        assert r != {}
 
 
-def test_sample_multi():
+def test_sample_multi_sync_2():
     """
     Tests the multi-threaded sample submission
     :return:
     """
     t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
     status1 = t.get_status()
-    results = t.scan_multi(SAMPLES_1)
+    results = t.scan_multi(SAMPLES_2)
     status2 = t.get_status()
     assert results
     assert len(results) > 0
     assert int(status1['scanned_samples']) < int(status2['scanned_samples'])
     for r in results:
-        result = r
-        assert result != []
+        assert r != {}
 
