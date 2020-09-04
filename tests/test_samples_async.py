@@ -4,7 +4,8 @@ from os.path import isfile, join
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
-PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
+#PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
+PROGRAM_DOR = "."
 THOR_THUNDERSTORM_HOST = 'ygdrasil.nextron'
 THOR_THUNDERSTORM_PORT = '8080'
 SAMPLE_DIR = path.join(PROGRAM_DIR, 'samples')
