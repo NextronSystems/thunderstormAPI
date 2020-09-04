@@ -5,7 +5,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 #PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
-PROGRAM_DOR = "."
+PROGRAM_DIR = "."
 THOR_THUNDERSTORM_HOST = 'ygdrasil.nextron'
 THOR_THUNDERSTORM_PORT = '8080'
 SAMPLE_1 = path.join(PROGRAM_DIR, 'samples/test-mimi.txt')
