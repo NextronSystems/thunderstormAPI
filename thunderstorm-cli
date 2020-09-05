@@ -2,10 +2,11 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.10"
+__version__ = "0.0.12"
 
 import os
 import json
+import time
 import logging
 import platform
 import argparse
@@ -68,6 +69,8 @@ if __name__ == '__main__':
     parser.add_argument('--ssl', action='store_true', help='Use TLS/SSL (HTTPS)', default=False)
     parser.add_argument('--strict_ssl', help='Use strict TLS/SSL (deny self-signed SSL certificates)',
                         metavar='strict-ssl', default=False)
+    parser.add_argument('-o', '--source', help='Source identifier (used in Thunderstorm server log)',
+                        metavar='source', default=platform.uname()[1])
 
     group_status = parser.add_argument_group(
         '=======================================================================\nInfo')
@@ -89,6 +92,8 @@ if __name__ == '__main__':
                                 help='Exclude pattern (can be used multiple times)')
     group_transmit.add_argument('-i', '--include', action='append', nargs='+',
                                 help='Include pattern (can be used multiple times)')
+    group_transmit.add_argument('-l', '--lookback', metavar='lookback', default=0,
+                                help='Only submit files created or modified within the last X seconds')
     group_transmit.add_argument('-n', '--threads', help='Number of threads', metavar='threads', default=12)
     group_transmit.add_argument('-m', '--min_level',
                                 help='Minimum level to report (Debug=1, Info=2, Notice=3, Error=4, Warning=5, Alert=6)',
@@ -197,7 +202,13 @@ if __name__ == '__main__':
             # Scan a complete directory
             if args.dir:
                 Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
+                num_found = 0
+                num_selected = 0
+                num_processed = 0
                 for path, directories, files in os.walk(args.dir):
+                    # Counters
+                    num_found += len(files)
+                    # Set filtered
                     filtered_files = files
                     # Exclude / Include
                     if args.exclude:
@@ -222,7 +233,21 @@ if __name__ == '__main__':
                     # List of files to process
                     dir_files = [os.path.join(path, fi) for fi in filtered_files]
 
+                    # Look-back
+                    if int(args.lookback) > 0:
+                        current_ts = time.time()
+                        max_ts = current_ts - int(args.lookback)
+                        selected_dir_files = []
+                        for filepath in dir_files:
+                            st = os.stat(filepath)
+                            mtime = st.st_mtime
+                            ctime = st.st_ctime
+                            if ctime > max_ts or mtime > max_ts:
+                                selected_dir_files.append(filepath)
+                        dir_files = selected_dir_files
+
                     # Starting the scan
+                    num_selected += len(dir_files)
                     if args.debug:
                         Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
 
@@ -233,6 +258,7 @@ if __name__ == '__main__':
                         asyn=args.asyn,
                         trace=args.trace
                     )
+                    num_processed += len(results)
 
                     # Only process the results in synchronous mode
                     if not args.asyn:
@@ -241,12 +267,14 @@ if __name__ == '__main__':
                             if len(result) != 0:
                                 if args.trace:
                                     print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
-                                if 'error' not in result:
+                                if 'status' not in result:
                                     # Match found
                                     print_matches(result, min_level=int(args.min_level))
                     else:
                         pass
                         #print(json.dumps(results, indent=4, sort_keys=True))
+
+                Log.info("Finished submission FOUND: %d SELECTED: %d PROCESSED: %d" % (num_found, num_selected, num_processed))
 
         if not args.file and not args.dir:
             Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")

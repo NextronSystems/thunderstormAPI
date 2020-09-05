@@ -13,8 +13,9 @@ The Thunderstorm command line interface (CLI) is a pre-written tool that impleme
 ### Usage
 
 ```bash
-usage: thunderstorm-cli [-h] [-t host] [-p port] [--ssl] [--strict_ssl strict-ssl] [--status] [--info] [--result] [-r sample-id] [-s] [-f sample] [-d sample-dir] [-e EXCLUDE [EXCLUDE ...]]
-                        [-i INCLUDE [INCLUDE ...]] [-n threads] [-m minimum-level] [--asyn] [-ps proxy-url] [-pu proxy-user] [-pp proxy-pass] [--debug] [--trace]
+usage: thunderstorm-cli [-h] [-t host] [-p port] [--ssl] [--strict_ssl strict-ssl] [-o source] [--status] [--info] [--result] [-r sample-id] [-s] [-f sample]
+                        [-d sample-dir] [-e EXCLUDE [EXCLUDE ...]] [-i INCLUDE [INCLUDE ...]] [-l lookback] [-n threads] [-m minimum-level] [--asyn]
+                        [-ps proxy-url] [-pu proxy-user] [-pp proxy-pass] [--debug] [--trace]
 
 THOR-Thunderstorm-CLI
 
@@ -27,6 +28,8 @@ optional arguments:
   --ssl                 Use TLS/SSL (HTTPS)
   --strict_ssl strict-ssl
                         Use strict TLS/SSL (deny self-signed SSL certificates)
+  -o source, --source source
+                        Source identifier (used in Thunderstorm server log)
   --debug               Debug output
   --trace               Trace output
 
@@ -49,6 +52,8 @@ Scan:
                         Exclude pattern (can be used multiple times)
   -i INCLUDE [INCLUDE ...], --include INCLUDE [INCLUDE ...]
                         Include pattern (can be used multiple times)
+  -l lookback, --lookback lookback
+                        Only submit files created or modified within the last X seconds
   -n threads, --threads threads
                         Number of threads
   -m minimum-level, --min_level minimum-level
@@ -71,7 +76,7 @@ Proxy:
 
 On a server you would run THOR in service mode as follows
 ```bash
-./thor-linux-64 --server --server-host 10.0.0.14 --trace --threadcount 40
+./thor-linux-64 --server --server-host 10.0.0.14 --threadcount 40
 ```
 
 #### Client
@@ -109,7 +114,7 @@ Result
 [WARNI] Match found in FILE: ./samples/webshell.txt MATCH: {'level': 'Alert', 'module': 'Filescan', 'message': 'Malware file found', 'score': 140, 'context': {'ext': '', 'file': './samples/webshell.txt', 'firstBytes': '3c3f70687020406576616c28245f4745545b636d / <?php @eval($_GET[cm', 'md5': '6f70c1a517db1818e0234ba63185e6e9', 'sha1': '2f13649ccd9de947fd28616d73cc1387674a2df0', 'sha256': '5906cb00cbe1c108ff4a0e17f1c76606c57364467352ce4f986271e40bd5c1cc', 'size': 58, 'type': 'PHP'}, 'matches': [{'matched': ['php @eval($_POST['], 'reason': 'China Chopper Webshells - PHP and ASPX', 'ref': 'https://www.fireeye.com/content/dam/legacy/resources/pdfs/fireeye-china-chopper-report.pdf', 'ruledate': '2015-03-10', 'rulename': 'ChinaChopper_Generic', 'subscore': 75, 'tags': ['CHINA', 'GEN', 'T1100', 'WEBSHELL']}, {'matched': ['<?php', '$_GET[', 'eval('], 'reason': 'Detects suspiciously small PHP file that receives a parameter and runs a eval statement', 'ref': 'https://github.com/qiyeboy/kill_webshell_detect', 'ruledate': '2020-07-31', 'rulename': 'SUSP_WEBSHELL_PHP_Tiny_Indicators_Jul20', 'subscore': 65, 'tags': ['FILE', 'SUSP', 'T1100', 'T1136', 'WEBSHELL']}]}
 ```
 
-Submit all samples within a directory (recursive) to THOR Thunderstorm service running on `10.0.0.14`
+Submit all samples within a directory (recursively) to THOR Thunderstorm service running on `10.0.0.14`
 
 ```bash
 ./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/
@@ -124,6 +129,36 @@ Result
 [WARNI] Match found in FILE: ./samples/test-mimi.txt MATCH: {'level': 'Warning', 'module': 'Filescan', 'message': 'Possibly Dangerous file found', 'score': 205, 'context': {'ext': '', 'file': './samples/test-mimi.txt', 'firstBytes': '6c6f676f6e70617373776f7264733a3a0a73656b / logonpasswords::\nsek', 'md5': 'bf9d9616e86267d5d5ba48ad1161e2aa', 'sha1': '00d0289f25119fe4695e82aa09e18aa53b5606e2', 'sha256': '7579e064c44fb1782cf59485e7b812e72e30f1160d687e20976739d3f40cb748', 'size': 83, 'type': 'UNKNOWN'}, 'matches': [{'matched': [' -ma lsass.exe'], 'reason': 'Detects commands often used in malicious scripts', 'ref': 'https://twitter.com/SBousseaden/status/1272863752677965824', 'ruledate': '2020-06-16', 'rulename': 'SUSP_LSASS_Memory_Dump_CmdLine_Jun20_2', 'subscore': 70, 'tags': ['HKTL', 'SUSP', 'T1003', 'T1136']}, {'matched': ['-ma lsass.exe'], 'reason': 'Procdump - Batch file invocation', 'ref': '-', 'ruledate': '2013-01-01', 'rulename': 'HKTL_Procdump_BAT', 'subscore': 70, 'tags': ['APT', 'HKTL', 'T1136']}, {'matched': [' -ma ', ' lsass.exe'], 'reason': 'Detects suspicious post exploitation strings and command lines often used by attackers', 'ref': 'https://blog.talosintelligence.com/2019/08/china-chopper-still-active-9-years-later.html', 'ruledate': '2019-08-28', 'rulename': 'SUSP_PostExploitation_Cmds_Aug19_1', 'subscore': 65, 'tags': ['SUSP', 'T1136']}]}
 [WARNI] Match found in FILE: ./samples/webshell.txt MATCH: {'level': 'Alert', 'module': 'Filescan', 'message': 'Malware file found', 'score': 140, 'context': {'ext': '', 'file': './samples/webshell.txt', 'firstBytes': '3c3f70687020406576616c28245f4745545b636d / <?php @eval($_GET[cm', 'md5': '6f70c1a517db1818e0234ba63185e6e9', 'sha1': '2f13649ccd9de947fd28616d73cc1387674a2df0', 'sha256': '5906cb00cbe1c108ff4a0e17f1c76606c57364467352ce4f986271e40bd5c1cc', 'size': 58, 'type': 'PHP'}, 'matches': [{'matched': ['php @eval($_POST['], 'reason': 'China Chopper Webshells - PHP and ASPX', 'ref': 'https://www.fireeye.com/content/dam/legacy/resources/pdfs/fireeye-china-chopper-report.pdf', 'ruledate': '2015-03-10', 'rulename': 'ChinaChopper_Generic', 'subscore': 75, 'tags': ['CHINA', 'GEN', 'T1100', 'WEBSHELL']}, {'matched': ['<?php', '$_GET[', 'eval('], 'reason': 'Detects suspiciously small PHP file that receives a parameter and runs a eval statement', 'ref': 'https://github.com/qiyeboy/kill_webshell_detect', 'ruledate': '2020-07-31', 'rulename': 'SUSP_WEBSHELL_PHP_Tiny_Indicators_Jul20', 'subscore': 65, 'tags': ['FILE', 'SUSP', 'T1100', 'T1136', 'WEBSHELL']}]}
 [WARNI] Match found in FILE: ./samples/sekurlsa.log MATCH: {'level': 'Alert', 'module': 'Filescan', 'message': 'Malware file found', 'score': 325, 'context': {'ext': '', 'file': './samples/sekurlsa.log', 'firstBytes': "5573696e67202773656b75726c73612e6c6f6727 / Using 'sekurlsa.log'", 'md5': '619e7ad14b5a64481958ac5248dd832f', 'sha1': '886817e0fbc813c711616e2d1ace7c819cfd5b55', 'sha256': '0c66a723033b367e3700e83054f521a853bd6764b24924ce66c5df81d8ff32f3', 'size': 1362, 'type': 'Mimikatz Logfile'}, 'matches': [{'matched': ['* Username : ', '* Password : ', 'credman :'], 'reason': 'Detects credential dump strings from APT case', 'ref': 'White Amflora', 'ruledate': '2016-05-02', 'rulename': 'CustomerCase_C2_Credential_Dump', 'subscore': 100, 'tags': ['APT', 'CLIENT', 'HKTL', 'T1003', 'T1136']}, {'matched': ['SID               :', '* NTLM     :', 'Authentication Id :', 'wdigest :'], 'reason': 'Detects a log file generated by malicious hack tool mimikatz', 'ref': '-', 'ruledate': '2015-03-31', 'rulename': 'Mimikatz_Logfile', 'subscore': 80, 'tags': ['HKTL', 'T1003', 'T1075', 'T1097', 'T1136', 'T1178']}, {'matched': ['* Password : (null)', 'mimikatz # sekurlsa::logonpasswords', '* NTLM     : ', '* Username : ', 'Logon Server      : ', '] CredentialKeys'], 'reason': 'Detects keyword combo known from Mimikatz log files', 'ref': 'https://github.com/gentilkiwi/mimikatz/wiki/module-~-standard#log', 'ruledate': '2019-02-26', 'rulename': 'SUSP_Mimikatz_LogFile_Keywords', 'subscore': 75, 'tags': ['SUSP', 'T1003', 'T1075', 'T1097', 'T1136', 'T1178']}, {'matched': ['Authentication Id :', 'SID               :', 'tspkg :', 'kerberos :', '* Username :', 'credman :'], 'reason': 'Detects a log file of password dumper mimikatz', 'ref': '-', 'ruledate': '2014-12-22', 'rulename': 'Mimikatz_Log_Output', 'subscore': 70, 'tags': ['APT', 'T1003', 'T1075', 'T1097', 'T1136', 'T1178']}]}
+```
+
+Submit all samples within a directory and submit only `*.exe` and `*.dll` files.
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --include *.exe --include *.dll
+```
+
+Submit all samples within a directory and exclude files.
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --exclude *.evtx
+```
+
+Submit all samples within a directory and send only files that have been changed or modified within the last hour. 
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --lookback 3600
+```
+
+Submit all samples within a directory and send the files using HTTPS.
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --ssl
+```
+
+Submit all samples within a directory and send the files using asynchronous mode. (fast submission, no result response)
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --asyn
 ```
 
 ## Python Module
