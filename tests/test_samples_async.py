@@ -25,7 +25,9 @@ def test_sample_multi_async_1():
     status2 = t.get_status()
     assert results
     assert len(results) > 0
-    assert int(status1['scanned_samples']) < int(status2['scanned_samples'])
+    samples_before = int(status1['scanned_samples']) + int(status1['queued_async_requests'])
+    samples_after = int(status2['scanned_samples']) + int(status2['queued_async_requests'])
+    assert samples_before < samples_after
     for r in results:
         result = r
         assert result != []
