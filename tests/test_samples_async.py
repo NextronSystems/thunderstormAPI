@@ -21,14 +21,16 @@ def test_sample_multi_async_1():
     """
     t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
     assert len(SAMPLES_1) > 0
-    status1 = t.get_status()
+    #status1 = t.get_status()
     results = t.scan_multi(SAMPLES_1, asyn=True)
-    status2 = t.get_status()
+    #status2 = t.get_status()
     assert results
     assert len(results) > 0
-    samples_before = int(status1['scanned_samples']) + int(status1['queued_async_requests'])
-    samples_after = int(status2['scanned_samples']) + int(status2['queued_async_requests'])
-    assert samples_before < samples_after
+    # Cannot compare numbers in async mode as a race condition could lead to a state in which the counter has not
+    # yet been incremented if a sample set is too small
+    #samples_before = int(status1['scanned_samples']) + int(status1['queued_async_requests'])
+    #samples_after = int(status2['scanned_samples']) + int(status2['queued_async_requests'])
+    #assert samples_before < samples_after
     for r in results:
         result = r
         assert result != []
