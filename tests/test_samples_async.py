@@ -20,6 +20,7 @@ def test_sample_multi_async_1():
     :return:
     """
     t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
+    assert len(SAMPLES_1) > 0
     status1 = t.get_status()
     results = t.scan_multi(SAMPLES_1, asyn=True)
     status2 = t.get_status()
@@ -43,6 +44,7 @@ def test_sample_multi_async_2():
     :return:
     """
     t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
+    assert len(SAMPLES_2) > 0
     status1 = t.get_status()
     results = t.scan_multi(SAMPLES_2, asyn=True)
     status2 = t.get_status()
