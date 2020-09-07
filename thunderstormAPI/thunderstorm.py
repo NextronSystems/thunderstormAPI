@@ -220,7 +220,7 @@ class ThunderstormAPI(object):
         try:
             jresult = json.loads(r.text)
             # Wrong JSON response
-            if 'uptime_s' not in jresult:
+            if 'uptime_seconds' not in jresult:
                 return {"status": "error", "message": "JSON content is not the expected one",
                         "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
