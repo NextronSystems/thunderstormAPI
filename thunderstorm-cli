@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.12"
+__version__ = "0.0.14"
 
 import os
 import json
@@ -182,10 +182,10 @@ if __name__ == '__main__':
         else:
             try:
                 av_scan_time = "N/A"
-                if 'avg_scan_time_ms' in status:
-                    av_scan_time = "%sms" % status['avg_scan_time_ms']
+                if 'avg_scan_time_milliseconds' in status:
+                    av_scan_time = "%sms" % status['avg_scan_time_milliseconds']
                 Log.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
-                    time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_s']))),
+                    time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_seconds']))),
                     int(status['scanned_samples']),
                     av_scan_time
                 ))

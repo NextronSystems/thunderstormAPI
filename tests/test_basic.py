@@ -16,7 +16,7 @@ def test_status():
     """
     t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
     result = t.get_status()
-    assert result['uptime_s'] > 0
+    assert result['uptime_seconds'] > 0
 
 
 def test_info():
