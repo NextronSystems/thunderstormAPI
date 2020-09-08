@@ -45,8 +45,8 @@ class ThunderstormAPI(object):
         :param source: source identifier (which is the hostname by default)
         :param host: host on which runs THOR Thunderstorm service
         :param port: port on which listens THOR Thunderstorm service
-        :param use_ssl:
-        :param verify_ssl:
+        :param use_ssl: use SSL for the transmission
+        :param verify_ssl: verify the SSL/TLS server certificate
         """
         self.source = source
         self.host = host

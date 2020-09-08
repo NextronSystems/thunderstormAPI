@@ -12,7 +12,7 @@ The Thunderstorm command line interface (CLI) is a pre-written tool that impleme
 
 ### Usage
 
-```bash
+```commandline
 usage: thunderstorm-cli [-h] [-t host] [-p port] [--ssl] [--strict_ssl strict-ssl] [-o source] [--status] [--info] [--result] [-r sample-id] [-s] [-f sample]
                         [-d sample-dir] [-e EXCLUDE [EXCLUDE ...]] [-i INCLUDE [INCLUDE ...]] [-l lookback] [-n threads] [-m minimum-level] [--asyn]
                         [-ps proxy-url] [-pu proxy-user] [-pp proxy-pass] [--debug] [--trace]
@@ -161,6 +161,12 @@ Submit all samples within a directory and send the files using asynchronous mode
 ./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --asyn
 ```
 
+Submit all samples within a directory and set a custom source value. 
+
+```bash
+./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --source sample_collector_1
+```
+
 ## Python Module
 
 The 2 helper functions of the Python module are:
@@ -172,6 +178,33 @@ The 2 main functions of the Python module are:
 
 - `scan(sample)` submits a sample for remote scanning
 - `scan_multi(sample_list)` submits a list of samples (multi-threaded)
+
+### __init__()
+
+The `__init__` method accepts the following parameters:
+
+- `host`: host on which the THOR Thunderstorm service runs
+- `port`: port on which the THOR Thunderstorm service listens
+- `source`: custom source identifier (which is the hostname by default)
+- `use_ssl`: use SSL for the transmission
+- `verify_ssl`: verify the SSL/TLS server certificate
+
+### scan()
+
+The `scan` method accepts the following parameters:
+
+- `filelist`: list of absolute file paths
+- `asyn`: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+- `trace`: be more verbose than debug and show request and response
+
+### scan_multi()
+
+The `scan_multi` method accepts the following parameters:
+
+- `filelist`: list of absolute file paths
+- `num_threads`: number of threads
+- `asyn`: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+- `trace`: be more verbose than debug and show each request and response
 
 # Installation
 
