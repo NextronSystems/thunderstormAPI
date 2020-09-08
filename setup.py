@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thunderstormAPI",
-    version="0.0.14",
+    version="0.0.16",
     author="Nextron",
     author_email="florian.roth@nextron-systems.com",
     description="THOR Thunderstorm Service API Client",
@@ -24,7 +24,9 @@ setuptools.setup(
         'configparser',
     ],
     python_requires='~=3.5',
-    scripts=[
-        'thunderstorm-cli',
-    ]
+    entry_points={
+        'console_scripts': [
+            'thunderstorm-cli = thunderstormAPI.thunderstorm_cli:main',
+        ],
+    },
 )

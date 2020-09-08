@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.14"
+__version__ = "0.0.16"
 
 import os
 import json
@@ -60,7 +60,11 @@ def print_matches(matches, min_level):
                     Log.critical(match_string)
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Main Function (used as entry point)
+    :return:
+    """
     # Parse Arguments
     parser = argparse.ArgumentParser(description='THOR-Thunderstorm-CLI')
 
@@ -278,3 +282,6 @@ if __name__ == '__main__':
 
         if not args.file and not args.dir:
             Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")
+
+if __name__ == "__main__":
+    main()

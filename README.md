@@ -6,6 +6,14 @@ Running THOR in service mode (--service) starts a local RESTful API service. Thi
 
 This repository contains a Python module named `thunderstormAPI` and an example Python command line API client implementation named `thunderstorm-cli`. 
 
+# Installation
+
+```
+pip install thunderstormAPI
+```
+
+(Note: use `pip3 install thunderstormAPI` on Debian)
+
 ## Thunderstorm CLI 
 
 The Thunderstorm command line interface (CLI) is a pre-written tool that implements the Python module. 
@@ -205,12 +213,6 @@ The `scan_multi` method accepts the following parameters:
 - `num_threads`: number of threads
 - `asyn`: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
 - `trace`: be more verbose than debug and show each request and response
-
-# Installation
-
-```
-pip install thunderstormAPI
-```
 
 ## Examples
 
