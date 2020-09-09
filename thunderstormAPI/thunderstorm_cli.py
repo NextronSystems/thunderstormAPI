@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.16"
+__version__ = "0.0.17"
 
 import os
 import json
@@ -26,38 +26,6 @@ LEVELS = {
 }
 
 urllib3.disable_warnings()
-
-
-def print_matches(matches, min_level):
-    """
-    Pretty print a response that shows a match
-    :param fielpath:
-    :param match:
-    :param min_level:
-    :return:
-    """
-    for match in matches:
-        # Lookup the level value from the static LEVEL dictionary
-        if not 'level' in match:
-            Log.error("Something is wrong with the match object! Cannot process it: %s" % match)
-            continue
-        m_level = LEVELS[match['level']]
-        # Original filename
-        orig_name = match['context']['file']
-        # If the match level is higher or equal to minimum level to report
-        if m_level >= min_level:
-            match_string = "Result returned for FILE: %s MATCH: %s" % (orig_name, match)
-            if match['level']:
-                if match['level'] == 'Debug':
-                    Log.debug(match_string)
-                if match['level'] == 'Info':
-                    Log.debug(match_string)
-                if match['level'] == 'Notice':
-                    Log.info(match_string)
-                if match['level'] == 'Warning':
-                    Log.warning(match_string)
-                if match['level'] == 'Alert':
-                    Log.critical(match_string)
 
 
 def main():
@@ -268,20 +236,42 @@ def main():
                     if not args.asyn:
                         # Process the results
                         for result in results:
+                            #
                             if len(result) != 0:
                                 if args.trace:
                                     print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
+                                # Not an error
                                 if 'status' not in result:
-                                    # Match found
-                                    print_matches(result, min_level=int(args.min_level))
-                    else:
-                        pass
-                        #print(json.dumps(results, indent=4, sort_keys=True))
+                                    # Process all matches
+                                    for match in result:
+                                        # Lookup the level value from the static LEVEL dictionary
+                                        if 'level' not in match:
+                                            Log.error(
+                                                "Something is wrong with the match object! Cannot process it: %s" % match)
+                                            continue
+                                        m_level = LEVELS[match['level']]
+                                        # Original filename
+                                        orig_name = match['context']['file']
+                                        # If the match level is higher or equal to minimum level to report
+                                        if m_level >= int(args.min_level):
+                                            match_string = "Result returned for FILE: %s MATCH: %s" % (orig_name, match)
+                                            if match['level']:
+                                                if match['level'] == 'Debug':
+                                                    Log.debug(match_string)
+                                                if match['level'] == 'Info':
+                                                    Log.debug(match_string)
+                                                if match['level'] == 'Notice':
+                                                    Log.info(match_string)
+                                                if match['level'] == 'Warning':
+                                                    Log.warning(match_string)
+                                                if match['level'] == 'Alert':
+                                                    Log.critical(match_string)
 
                 Log.info("Finished submission FOUND: %d SELECTED: %d PROCESSED: %d" % (num_found, num_selected, num_processed))
 
         if not args.file and not args.dir:
             Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")
+
 
 if __name__ == "__main__":
     main()

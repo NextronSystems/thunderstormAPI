@@ -5,8 +5,8 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thunderstormAPI",
-    version="0.0.16",
-    author="Nextron",
+    version="0.0.17",
+    author="Florian Roth",
     author_email="florian.roth@nextron-systems.com",
     description="THOR Thunderstorm Service API Client",
     long_description=long_description,

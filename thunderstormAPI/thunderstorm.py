@@ -10,11 +10,12 @@ import requests
 import platform
 import traceback
 import urllib3
+from os import path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.16"
+__version__ = "0.0.17"
 
 API_CHECK_URI = '/api/check'
 API_SUBMIT_URI_ASYNC = '/api/checkAsync'
@@ -90,14 +91,15 @@ class ThunderstormAPI(object):
             api_endpoint = API_SUBMIT_URI_ASYNC
         # Compose the URL
         url = "{}://{}:{}{}?source={}".format(self.method, self.host, self.port, api_endpoint, self.source)
-
+        # use the absolute path in the request - best for IOC application
+        abs_path = path.abspath(filepath)
         try:
             with open(filepath, 'rb') as f:
                 headers = {'User-Agent': "THOR Thunderstorm API Client %s" % __version__}
-                files = {"file": (filepath, f.read(), 'application/octet-stream')}
+                files = {"file": (abs_path, f.read(), 'application/octet-stream')}
                 try:
                     if trace:
-                        print("SUBMIT > %s" % filepath)
+                        print("SUBMIT > %s" % abs_path)
                     resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
                                          verify=self.verify_ssl, stream=True)
                 except Exception as e:
@@ -125,13 +127,13 @@ class ThunderstormAPI(object):
                     if not asyn:
                         if len(result) > 0:
                             for r in result:
-                                r['context']['file'] = filepath
+                                r['context']['file'] = abs_path
                     # in asynchronous results
                     else:
-                        result['file'] = filepath
+                        result['file'] = abs_path
 
                     if trace:
-                        print("RESP < %s" % filepath)
+                        print("RESP < %s" % abs_path)
                         print("RESULT: %s" % result)
 
                     return result
