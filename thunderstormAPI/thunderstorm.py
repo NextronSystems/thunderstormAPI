@@ -115,6 +115,7 @@ class ThunderstormAPI(object):
                             traceback.print_exc()
                         print("Cannot submit %s ERROR: %s" % (filepath, str(e)))
                         time.sleep(2)
+                        continue
 
                     # Warning
                     if resp.status_code == 503 and 'Retry-After' in resp.headers:
