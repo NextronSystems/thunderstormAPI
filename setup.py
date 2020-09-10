@@ -11,7 +11,7 @@ setuptools.setup(
     description="THOR Thunderstorm Service API Client",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/nextron/thunderstormAPI",
+    url="https://github.com/NextronSystems/thunderstormAPI",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

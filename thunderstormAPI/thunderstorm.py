@@ -113,7 +113,7 @@ class ThunderstormAPI(object):
                     except Exception as e:
                         if debug:
                             traceback.print_exc()
-                        print("Cannot submit %s ERROR: " % (filepath, str(e)))
+                        print("Cannot submit %s ERROR: %s" % (filepath, str(e)))
                         time.sleep(2)
 
                     # Warning
