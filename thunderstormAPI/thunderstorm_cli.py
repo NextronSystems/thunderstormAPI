@@ -167,10 +167,10 @@ def main():
                 print(status)
             # Scan a single file
             if args.file:
-                result = thorapi.scan(args.file, asyn=args.asyn, trace=args.trace)
+                result = thorapi.scan(args.file, asyn=args.asyn, debug=args.debug, trace=args.trace)
                 if args.debug:
                     Log.info("Submitting file %s for scanning ..." % args.file)
-                print_matches(result, min_level=int(args.min_level))
+                print(result)
             # Scan a complete directory
             if args.dir:
                 Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
@@ -228,6 +228,7 @@ def main():
                         filelist=dir_files,
                         num_threads=int(args.threads),
                         asyn=args.asyn,
+                        debug=args.debug,
                         trace=args.trace
                     )
                     num_processed += len(results)

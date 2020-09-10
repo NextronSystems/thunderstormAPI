@@ -5,6 +5,7 @@
 # THOR Service API Client
 # Florian Roth
 
+import time
 import json
 import requests
 import platform
@@ -39,6 +40,8 @@ class ThunderstormAPI(object):
     method = 'http'
     verify_ssl = False
     proxies = {}
+    # Counters
+    server_busy_responses = 0
 
     def __init__(self, host="127.0.0.1", port=8080, source=platform.uname()[1], use_ssl=False, verify_ssl=False):
         """
@@ -76,11 +79,12 @@ class ThunderstormAPI(object):
             u.netloc
         )}
 
-    def scan(self, filepath, asyn=False, trace=False):
+    def scan(self, filepath, asyn=False, debug=False, trace=False):
         """
         Scan a certain file
         :param filelist: list of absolute file paths
         :param asyn: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+        :param debug: show debug output
         :param trace: more verbose than debug
         :return:
         """
@@ -97,20 +101,39 @@ class ThunderstormAPI(object):
             with open(filepath, 'rb') as f:
                 headers = {'User-Agent': "THOR Thunderstorm API Client %s" % __version__}
                 files = {"file": (abs_path, f.read(), 'application/octet-stream')}
-                try:
-                    if trace:
-                        print("SUBMIT > %s" % abs_path)
-                    resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
-                                         verify=self.verify_ssl, stream=True)
-                except Exception as e:
-                    traceback.print_exc()
-                    print(str(e))
-                    return {'status': 'error', 'message': str(e), 'content': 'Cannot submit file'}
 
-                # Warning
-                if resp.status_code != 200:
-                    print("Status code != 200 : %d" % resp.status_code)
-                    raise Exception("Server returned status code != 200. Something is wrong.")
+                # Try until you succeed
+                submission_unsuccessful = True
+                while submission_unsuccessful:
+                    try:
+                        if trace:
+                            print("SUBMIT > %s" % abs_path)
+                        resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
+                                             verify=self.verify_ssl, stream=True)
+                    except Exception as e:
+                        if debug:
+                            traceback.print_exc()
+                        print("Cannot submit %s ERROR: " % (filepath, str(e)))
+                        time.sleep(2)
+
+                    # Warning
+                    if resp.status_code == 503 and 'Retry-After' in resp.headers:
+                        seconds_to_wait = int(resp.headers['Retry-After'])
+                        print("503: Server seems to be busy. We'll wait a few seconds (%d) to submit %s" %
+                              (seconds_to_wait, filepath))
+                        self.server_busy_responses += 1
+                        if (self.server_busy_responses % 100) == 0:
+                            print("Hint: Server seems to be busy for a long time, try asynchronous submission if "
+                                  "possible (--asyn)")
+                        time.sleep(seconds_to_wait)
+                    elif resp.status_code != 200:
+                        print("Status code != 200 : %d" % resp.status_code)
+                        if debug:
+                            print(resp.content)
+                        time.sleep(2)
+                    else:
+                        # Submission succeeded
+                        submission_unsuccessful = False
 
                 # Process response
                 try:
@@ -152,19 +175,20 @@ class ThunderstormAPI(object):
             traceback.print_exc()
             return {'status': 'error', 'message': str(e), 'content': 'Cannot open file %s' % filepath}
 
-    def scan_multi(self, filelist, num_threads=16, asyn=False, trace=False):
+    def scan_multi(self, filelist, num_threads=16, asyn=False, debug=False, trace=False):
         """
         Multi-threaded scan of a set of files
         :param filelist: list of absolute file paths
         :param num_threads: number of threads
         :param asyn: asynchronous mode, just submit, don't wait for scan result (server returns only a submission receipt)
+        :param debug: show debug output
         :param trace: more verbose than debug
         :return:
         """
         threads = []
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for file in filelist:
-                threads.append(executor.submit(self.scan, filepath=file, asyn=asyn, trace=trace))
+                threads.append(executor.submit(self.scan, filepath=file, asyn=asyn, debug=debug, trace=trace))
 
         results = []
         for task in as_completed(threads):
