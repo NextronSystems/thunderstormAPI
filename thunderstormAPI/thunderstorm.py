@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.17"
+__version__ = "0.0.18"
 
 API_CHECK_URI = '/api/check'
 API_SUBMIT_URI_ASYNC = '/api/checkAsync'

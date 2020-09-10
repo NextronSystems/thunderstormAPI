@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.17"
+__version__ = "0.0.18"
 
 import os
 import json
