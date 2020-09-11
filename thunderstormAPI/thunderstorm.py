@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
 
-__version__ = "0.0.18"
+__version__ = "0.1.0"
 
 API_CHECK_URI = '/api/check'
 API_SUBMIT_URI_ASYNC = '/api/checkAsync'
@@ -229,9 +229,10 @@ class ThunderstormAPI(object):
             return {'status': 'error', 'message': str(e)}
         return jresult
 
-    def get_status(self):
+    def get_status(self, debug=False):
         """
         Retrieve the service status
+        :param debug:
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_STATUS_URI)
@@ -240,9 +241,13 @@ class ThunderstormAPI(object):
                              proxies=self.proxies,
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
+            if debug:
+                traceback.print_exc()
             print("Cannot connect to %s" % url)
             return {"status": "error", "message": str(e), "content": "-"}
         except Exception as e:
+            if debug:
+                traceback.print_exc()
             return {'status': 'error', 'message': str(e)}
         try:
             jresult = json.loads(r.text)
@@ -251,14 +256,19 @@ class ThunderstormAPI(object):
                 return {"status": "error", "message": "JSON content is not the expected one",
                         "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
+            if debug:
+                traceback.print_exc()
             return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         except Exception as e:
+            if debug:
+                traceback.print_exc()
             return {'status': 'error', 'message': str(e)}
         return jresult
 
-    def get_info(self):
+    def get_info(self, debug=False):
         """
         Retrieve the service information
+        :param debug:
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_INFO_URI)
@@ -268,13 +278,19 @@ class ThunderstormAPI(object):
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
             print("Cannot connect to %s" % url)
+            if debug:
+                traceback.print_exc()
             return {"status": "error", "message": str(e), "content": "-"}
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
+            if debug:
+                traceback.print_exc()
             return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         except Exception as e:
+            if debug:
+                traceback.print_exc()
             return {'status': 'error', 'message': str(e)}
         return jresult

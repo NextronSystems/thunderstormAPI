@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.0.18"
+__version__ = "0.1.0"
 
 import os
 import json
@@ -128,12 +128,12 @@ def main():
 
     # Status
     if args.status:
-        result = thorapi.get_status()
+        result = thorapi.get_status(debug=args.debug)
         print(json.dumps(result, indent=4, sort_keys=True))
 
     # Info
     if args.info:
-        result = thorapi.get_info()
+        result = thorapi.get_info(debug=args.debug)
         print(json.dumps(result, indent=4, sort_keys=True))
 
     # Sample Info
