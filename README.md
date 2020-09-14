@@ -94,7 +94,7 @@ See our github [repository](https://github.com/NextronSystems/nextron-helper-scr
 Get information on a running THOR Thunderstorm service on `10.0.0.14`
 
 ```bash
-./thunderstorm-cli --info -h 10.0.0.14
+./thunderstorm-cli --info -t 10.0.0.14
 ```
 
 Result 
@@ -113,7 +113,7 @@ Result
 Submit a single sample to THOR Thunderstorm service running on `10.0.0.4`
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -f ./samples/webshell.txt
+./thunderstorm-cli --scan -t 10.0.0.14 -f ./samples/webshell.txt
 ```
 
 Result
@@ -127,7 +127,7 @@ Result
 Submit all samples within a directory (recursively) to THOR Thunderstorm service running on `10.0.0.14`
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/
 ```
 
 Result
@@ -144,37 +144,37 @@ Result
 Submit all samples within a directory and submit only `*.exe` and `*.dll` files.
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --include *.exe --include *.dll
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --include *.exe --include *.dll
 ```
 
 Submit all samples within a directory and exclude files.
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --exclude *.evtx
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --exclude *.evtx
 ```
 
 Submit all samples within a directory and send only files that have been changed or modified within the last hour. 
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --lookback 3600
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --lookback 3600
 ```
 
 Submit all samples within a directory and send the files using HTTPS.
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --ssl
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --ssl
 ```
 
 Submit all samples within a directory and send the files using asynchronous mode. (fast submission, no result response)
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --asyn
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --asyn
 ```
 
 Submit all samples within a directory and set a custom source value. 
 
 ```bash
-./thunderstorm-cli --scan -h 10.0.0.14 -d ./samples/ --source sample_collector_1
+./thunderstorm-cli --scan -t 10.0.0.14 -d ./samples/ --source sample_collector_1
 ```
 
 ## Python Module
