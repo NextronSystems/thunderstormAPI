@@ -2,7 +2,7 @@
 # Thunderstorm (THOR Service) API Command Line Client
 # Florian Roth, 2020
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 import os
 import json
@@ -72,7 +72,7 @@ def main():
                                 metavar='minimum-level', default=3)
     group_transmit.add_argument('--asyn', action='store_true', default=False,
                                 help='Asynchronous transmission (server just returns a send receipt and not a result, '
-                                     'which allows a much fast transmission)')
+                                     'which allows a much faster transmission)')
 
     group_proxy = parser.add_argument_group(
         '=======================================================================\nProxy')
@@ -142,7 +142,7 @@ def main():
             result = thorapi.get_async_result(id=args.id)
             print(json.dumps(result, indent=4, sort_keys=True))
         else:
-            print("Cannot query for a reuslt without an id (--id X)")
+            print("Cannot query for a result without an id (--id X)")
 
     # Transmit samples to the scan service
     if args.scan:
