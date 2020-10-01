@@ -82,9 +82,9 @@ Proxy:
 
 #### Server
 
-On a server you would run THOR in service mode as follows
+On a server you would run THOR in Thunderstorm service mode as follows
 ```bash
-./thor-linux-64 --server --server-host 10.0.0.14 --threadcount 40
+./thor-linux-64 --thunderstorm --server-host 10.0.0.14
 ```
 
 See our github [repository](https://github.com/NextronSystems/nextron-helper-scripts/tree/master/thunderstorm) for scripts that help you with the installation of THOR Thunderstorm. 
