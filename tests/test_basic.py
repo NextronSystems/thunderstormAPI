@@ -5,7 +5,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
-THOR_THUNDERSTORM_HOST = 'ygdrasil.nextron'
+THOR_THUNDERSTORM_HOST = '127.0.0.1'
 THOR_THUNDERSTORM_PORT = '8080'
 
 

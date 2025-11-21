@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Thunderstorm (THOR Service) API Command Line Client
-# Florian Roth, 2020
+# Florian Roth, 2025
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 import os
 import json
@@ -14,7 +14,15 @@ import time
 import traceback
 import fnmatch
 import urllib3
+import logging
 from thunderstormAPI.thunderstorm import ThunderstormAPI
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(levelname)-5.5s] %(message)s',
+)
+
+logger = logging.getLogger(__name__)
 
 LEVELS = {
     'Debug': 1,
@@ -92,30 +100,25 @@ def main():
     print("    / / / _ \\/ // / _ \\/ _  / -_) __(_-</ __/ _ \\/ __/  ' \\ ")
     print("   /_/ /_//_/\\_,_/_//_/\\_,_/\\__/_/ /___/\\__/\\___/_/ /_/_/_/ ")
     print("   THOR Service API Client                                  ")
-    print("   Version %s, Florian Roth, 2020                        " % __version__)
+    print("   Version %s, Florian Roth, 2025                        " % __version__)
     print(" ")
 
     print("=======================================================================")
     print(" ")
 
-    # Logging
-    logFormatter = logging.Formatter("[%(levelname)-5.5s] %(message)s")
-    logFormatterRemote = logging.Formatter("{0} [%(levelname)-5.5s] %(message)s".format(platform.uname()[1]))
-    Log = logging.getLogger(__name__)
-    Log.setLevel(logging.INFO)
-    # Console Handler
-    consoleHandler = logging.StreamHandler()
-    consoleHandler.setFormatter(logFormatter)
-    Log.addHandler(consoleHandler)
-
     # Debug
     if args.debug:
-        Log.setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Debug output enabled")
+        logging.getLogger("thunderstormAPI").setLevel(logging.DEBUG)
+        logging.getLogger("thunderstormAPI.thunderstorm").setLevel(logging.DEBUG)
+    if args.trace:
+        logger.debug("Trace output enabled")
 
     use_ssl = "without"
     if args.ssl:
         use_ssl = "with"
-    Log.info("Using THOR Thunderstorm service on host %s port %s %s SSL/TLS" % (args.thor_host, args.thor_port, use_ssl))
+    logger.info("Using THOR Thunderstorm service on host %s port %s %s SSL/TLS", args.thor_host, args.thor_port, use_ssl)
     thorapi = ThunderstormAPI(host=args.thor_host, port=args.thor_port, use_ssl=args.ssl, verify_ssl=args.strict_ssl)
 
     # Set Proxy
@@ -150,30 +153,29 @@ def main():
         status = thorapi.get_status()
         if 'status' in status:
             if status['status'] == 'error':
-                Log.error("Error: %s" % status['message'])
+                logger.error("Error: %s" % status['message'])
         else:
             try:
                 av_scan_time = "N/A"
                 if 'avg_scan_time_milliseconds' in status:
                     av_scan_time = "%sms" % status['avg_scan_time_milliseconds']
-                Log.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
+                logger.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
                     time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_seconds']))),
                     int(status['scanned_samples']),
                     av_scan_time
                 ))
             except KeyError as e:
                 traceback.print_exc()
-                Log.error("JSON response contains unexpected content")
+                logger.error("JSON response contains unexpected content")
                 print(status)
             # Scan a single file
             if args.file:
                 result = thorapi.scan(args.file, asyn=args.asyn, debug=args.debug, trace=args.trace)
-                if args.debug:
-                    Log.info("Submitting file %s for scanning ..." % args.file)
-                print(result)
+                logger.debug("Submitting file %s for scanning ..." % args.file)
+                logger.info(result)
             # Scan a complete directory
             if args.dir:
-                Log.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
+                logger.info("Submitting samples from %s using %d threads" % (args.dir, int(args.threads)))
                 num_found = 0
                 num_selected = 0
                 num_processed = 0
@@ -187,19 +189,19 @@ def main():
                         for e in args.exclude:
                             exclude = e[0]
                             if args.trace:
-                                print("Exclude: %s" % exclude)
+                                logger.debug("Exclude: %s" % exclude)
                             matching = fnmatch.filter(files, exclude)
                             if args.trace:
-                                print("Exclude: %s" % matching)
+                                logger.debug("Exclude: %s" % matching)
                             filtered_files = [exclude for exclude in files if exclude not in matching]
                     if args.include:
                         for i in args.include:
                             include = i[0]
                             if args.trace:
-                                print("Include: %s" % include)
+                                logger.debug("Include: %s" % include)
                             matching = fnmatch.filter(files, include)
                             if args.trace:
-                                print("Including: %s" % matching)
+                                logger.debug("Including: %s" % matching)
                             filtered_files = [include for include in files if include in matching]
 
                     # List of files to process
@@ -220,8 +222,7 @@ def main():
 
                     # Starting the scan
                     num_selected += len(dir_files)
-                    if args.debug:
-                        Log.info("Scanning path: %s with %d elements " % (path, len(dir_files)))
+                    logger.debug("Scanning path: %s with %d elements " % (path, len(dir_files)))
 
                     # Scan List of Files
                     results = thorapi.scan_multi(
@@ -240,14 +241,14 @@ def main():
                             #
                             if len(result) != 0:
                                 if args.trace:
-                                    print("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
+                                    logger.debug("MULTI SCAN MATCHES: %s" % json.dumps(results, indent=4))
                                 # Not an error
                                 if 'status' not in result:
                                     # Process all matches
                                     for match in result:
                                         # Lookup the level value from the static LEVEL dictionary
                                         if 'level' not in match:
-                                            Log.error(
+                                            logger.error(
                                                 "Something is wrong with the match object! Cannot process it: %s" % match)
                                             continue
                                         m_level = LEVELS[match['level']]
@@ -258,20 +259,20 @@ def main():
                                             match_string = "Result returned for FILE: %s MATCH: %s" % (orig_name, match)
                                             if match['level']:
                                                 if match['level'] == 'Debug':
-                                                    Log.debug(match_string)
+                                                    logger.debug(match_string)
                                                 if match['level'] == 'Info':
-                                                    Log.debug(match_string)
+                                                    logger.debug(match_string)
                                                 if match['level'] == 'Notice':
-                                                    Log.info(match_string)
+                                                    logger.info(match_string)
                                                 if match['level'] == 'Warning':
-                                                    Log.warning(match_string)
+                                                    logger.warning(match_string)
                                                 if match['level'] == 'Alert':
-                                                    Log.critical(match_string)
+                                                    logger.critical(match_string)
 
-                Log.info("Finished submission FOUND: %d SELECTED: %d PROCESSED: %d" % (num_found, num_selected, num_processed))
+                logger.info("Finished submission FOUND: %d SELECTED: %d PROCESSED: %d" % (num_found, num_selected, num_processed))
 
         if not args.file and not args.dir:
-            Log.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")
+            logger.error("You've used -s/--scan without providing a sample file (-f) or directory (-d) to scan")
 
 
 if __name__ == "__main__":

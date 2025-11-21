@@ -6,7 +6,7 @@ from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 #PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 PROGRAM_DIR = "."
-THOR_THUNDERSTORM_HOST = 'ygdrasil.nextron'
+THOR_THUNDERSTORM_HOST = '127.0.0.1'
 THOR_THUNDERSTORM_PORT = '8080'
 SAMPLE_1 = path.join(PROGRAM_DIR, 'samples/test-mimi.txt')
 SAMPLE_DIR = path.join(PROGRAM_DIR, 'samples')

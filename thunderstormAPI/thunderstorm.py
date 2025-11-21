@@ -11,10 +11,13 @@ import requests
 import platform
 import traceback
 import urllib3
+import logging
 from os import path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 __version__ = "0.1.1"
 
@@ -28,8 +31,7 @@ urllib3.disable_warnings()
 
 
 def scan_exception(request, exception):
-    print("Error: {0}: {1}".format(request.url, exception))
-
+    logger.error("Error: %s: %s", request.url, exception)
 
 class ThunderstormAPI(object):
     """
@@ -103,38 +105,39 @@ class ThunderstormAPI(object):
                 files = {"file": (abs_path, f.read(), 'application/octet-stream')}
 
                 # Try until you succeed
-                submission_unsuccessful = True
-                while submission_unsuccessful:
+                submit_file = True
+                while submit_file:
                     try:
                         if trace:
-                            print("SUBMIT > %s" % abs_path)
+                            logger.debug("SUBMIT > %s" % abs_path)
                         resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
                                              verify=self.verify_ssl, stream=True)
                     except Exception as e:
-                        if debug:
-                            traceback.print_exc()
-                        print("Cannot submit %s ERROR: %s" % (filepath, str(e)))
+                        logger.debug("Traceback:\n%s", traceback.format_exc())
+                        logger.error("Cannot submit %s ERROR: %s", filepath, str(e))
                         time.sleep(2)
                         continue
 
-                    # Warning
+                    # Response 
+                    # Thunderstorm service is busy, wait and retry
                     if resp.status_code == 503 and 'Retry-After' in resp.headers:
                         seconds_to_wait = int(resp.headers['Retry-After'])
-                        print("503: Server seems to be busy. We'll wait a few seconds (%d) to submit %s" %
+                        logger.warning("503: Server seems to be busy. We'll wait a few seconds (%d) to submit %s" %
                               (seconds_to_wait, filepath))
                         self.server_busy_responses += 1
                         if (self.server_busy_responses % 100) == 0:
-                            print("Hint: Server seems to be busy for a long time, try asynchronous submission if "
-                                  "possible (--asyn)")
+                            logger.warning("Hint: Server seems to be busy for a long time, try asynchronous submission if "
+                                           "possible (--asyn)")
                         time.sleep(seconds_to_wait)
+                    # Other error codes
                     elif resp.status_code != 200:
-                        print("Status code != 200 : %d" % resp.status_code)
-                        if debug:
-                            print(resp.content)
-                        time.sleep(2)
+                        logger.error("Status Code: %d, Error: %s", resp.status_code, resp.content)
+                        # We set this to False to avoid infinite loops on other errors
+                        submit_file = False
+                    # Successful submission
                     else:
-                        # Submission succeeded
-                        submission_unsuccessful = False
+                        # Submission succeeded, so we can process the response and exit the loop
+                        submit_file = False
 
                 # Process response
                 try:
@@ -157,8 +160,8 @@ class ThunderstormAPI(object):
                         result['file'] = abs_path
 
                     if trace:
-                        print("RESP < %s" % abs_path)
-                        print("RESULT: %s" % result)
+                        logger.debug("RESP < %s" % abs_path)
+                        logger.debug("RESULT: %s" % result)
 
                     return result
 
@@ -173,7 +176,8 @@ class ThunderstormAPI(object):
                     return {'status': 'error', 'message': str(e), 'content': 'Unexpected error'}
 
         except FileNotFoundError as e:
-            traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
+            logger.error("Cannot open file %s: %s", filepath, str(e))
             return {'status': 'error', 'message': str(e), 'content': 'Cannot open file %s' % filepath}
 
     def scan_multi(self, filelist, num_threads=16, asyn=False, debug=False, trace=False):
@@ -212,7 +216,7 @@ class ThunderstormAPI(object):
             if r.status_code != 200:
                 return {'status': 'error', 'status_code': r.status_code, 'message': str(r.content)}
         except requests.exceptions.ConnectionError as e:
-            print("Cannot connect to %s" % url)
+            logger.error("Cannot connect to %s", url)
             return {"status": "error", "message": str(e), "content": "-"}
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
@@ -241,13 +245,11 @@ class ThunderstormAPI(object):
                              proxies=self.proxies,
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
-            if debug:
-                traceback.print_exc()
-            print("Cannot connect to %s" % url)
+            logger.debug("Traceback:\n%s", traceback.format_exc())
+            logger.error("Cannot connect to %s", url)
             return {"status": "error", "message": str(e), "content": "-"}
         except Exception as e:
-            if debug:
-                traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {'status': 'error', 'message': str(e)}
         try:
             jresult = json.loads(r.text)
@@ -256,12 +258,10 @@ class ThunderstormAPI(object):
                 return {"status": "error", "message": "JSON content is not the expected one",
                         "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
-            if debug:
-                traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         except Exception as e:
-            if debug:
-                traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {'status': 'error', 'message': str(e)}
         return jresult
 
@@ -277,20 +277,18 @@ class ThunderstormAPI(object):
                              proxies=self.proxies,
                              verify=self.verify_ssl)
         except requests.exceptions.ConnectionError as e:
-            print("Cannot connect to %s" % url)
-            if debug:
-                traceback.print_exc()
+            logger.error("Cannot connect to %s", url)
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {"status": "error", "message": str(e), "content": "-"}
         except Exception as e:
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {'status': 'error', 'message': str(e)}
         try:
             jresult = json.loads(r.text)
         except json.JSONDecodeError as e:
-            if debug:
-                traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {"status": "error", "message": str(e), "content": json.dumps(str(r.content[:128]))}
         except Exception as e:
-            if debug:
-                traceback.print_exc()
+            logger.debug("Traceback:\n%s", traceback.format_exc())
             return {'status': 'error', 'message': str(e)}
         return jresult

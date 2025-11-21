@@ -1,53 +1,42 @@
-.PHONY: help prepare-dev test lint release release-test
+.PHONY: help venv test lint release release-test
 
-VENV_NAME=venv
-VENV_ACTIVATE=. $(VENV_NAME)/bin/activate
-PYTHON=${VENV_NAME}/bin/python3
+VENV_NAME   = venv
+VENV_PYTHON = $(VENV_NAME)/bin/python
+VENV_STAMP  = $(VENV_NAME)/.venv-stamp
 
 help:
-	@echo "make prepare-dev"
-	@echo "       prepare development environment, use only once"
+	@echo "make venv"
+	@echo "       create local virtualenv"
 	@echo "make test"
 	@echo "       run tests"
 	@echo "make lint"
 	@echo "       run pylint and mypy"
 
-prepare-dev:
-	sudo apt-get -y install python3 python3-pip
-	python -m pip install virtualenv
-	make venv
+venv: $(VENV_STAMP)
 
-venv: $(VENV_NAME)/bin/activate
-
-$(VENV_NAME)/bin/activate: setup.py
-	test -d $(VENV_NAME) || virtualenv -p python $(VENV_NAME)
-	${PYTHON} -m pip install -U pip
-	${PYTHON} -m pip install -r requirements.txt
-	touch $(VENV_NAME)/bin/activate
+$(VENV_STAMP): requirements.txt
+	python3 -m venv $(VENV_NAME)
+	$(VENV_PYTHON) -m pip install -U pip
+	$(VENV_PYTHON) -m pip install -r requirements.txt
+	touch $(VENV_STAMP)
 
 test: venv
-	${PYTHON} -m pytest -v
-
-release:
-	rm -rf ./dist/*
-	${PYTHON} -m pip install --upgrade setuptools wheel
-	${PYTHON} -m pip install --upgrade twine
-	${PYTHON} setup.py sdist bdist_wheel
-	${PYTHON} -m twine check dist/*
-	${PYTHON} -m twine upload dist/*
-
-release-test:
-	rm -rf ./dist/*
-	${PYTHON} -m pip install --upgrade setuptools wheel
-	${PYTHON} -m pip install --upgrade twine
-	${PYTHON} setup.py sdist bdist_wheel
-	${PYTHON} -m twine check dist/*
-	${PYTHON} -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	$(VENV_PYTHON) -m pytest -v
 
 lint: venv
-	${PYTHON} -m pylint
-	${PYTHON} -m mypy
+	$(VENV_PYTHON) -m pylint thunderstormAPI thunderstorm_cli.py
+	$(VENV_PYTHON) -m mypy thunderstormAPI thunderstorm_cli.py
 
+release: venv
+	rm -rf ./dist/*
+	$(VENV_PYTHON) -m pip install --upgrade setuptools wheel twine
+	$(VENV_PYTHON) setup.py sdist bdist_wheel
+	$(VENV_PYTHON) -m twine check dist/*
+	$(VENV_PYTHON) -m twine upload dist/*
 
-
-
+release-test: venv
+	rm -rf ./dist/*
+	$(VENV_PYTHON) -m pip install --upgrade setuptools wheel twine
+	$(VENV_PYTHON) setup.py sdist bdist_wheel
+	$(VENV_PYTHON) -m twine check dist/*
+	$(VENV_PYTHON) -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
