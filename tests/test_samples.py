@@ -1,13 +1,13 @@
 import sys
-from os import path, listdir
+from os import path, listdir, getenv
 from os.path import isfile, join
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 #PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 PROGRAM_DIR = "."
-THOR_THUNDERSTORM_HOST = '127.0.0.1'
-THOR_THUNDERSTORM_PORT = '8080'
+THOR_THUNDERSTORM_HOST = getenv('THOR_THUNDERSTORM_HOST', '127.0.0.1')
+THOR_THUNDERSTORM_PORT = getenv('THOR_THUNDERSTORM_PORT', '8080')
 SAMPLE_1 = path.join(PROGRAM_DIR, 'samples/test-mimi.txt')
 SAMPLE_DIR = path.join(PROGRAM_DIR, 'samples')
 SAMPLES_1 = [path.join(SAMPLE_DIR, f) for f in listdir(SAMPLE_DIR) if isfile(join(SAMPLE_DIR, f))]
