@@ -6,8 +6,8 @@ from thunderstormAPI.thunderstorm import ThunderstormAPI
 
 #PROGRAM_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 PROGRAM_DIR = "."
-THOR_THUNDERSTORM_HOST = getenv('THOR_THUNDERSTORM_HOST', '127.0.0.1')
-THOR_THUNDERSTORM_PORT = getenv('THOR_THUNDERSTORM_PORT', '8080')
+THUNDERSTORM_HOST = getenv('THUNDERSTORM_HOST', '127.0.0.1')
+THUNDERSTORM_PORT = getenv('THUNDERSTORM_PORT', '8080')
 SAMPLE_DIR = path.join(PROGRAM_DIR, 'samples')
 SAMPLES_1 = [path.join(SAMPLE_DIR, f) for f in listdir(SAMPLE_DIR) if isfile(join(SAMPLE_DIR, f))]
 REACT_DIR = path.join(SAMPLE_DIR, 'react')
@@ -19,7 +19,7 @@ def test_sample_multi_async_1():
     Tests the multi-threaded and asynchronous sample submission
     :return:
     """
-    t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
+    t = ThunderstormAPI(host=THUNDERSTORM_HOST, port=THUNDERSTORM_PORT)
     assert len(SAMPLES_1) > 0
     #status1 = t.get_status()
     results = t.scan_multi(SAMPLES_1, asyn=True)
@@ -45,7 +45,7 @@ def test_sample_multi_async_2():
     Tests the multi-threaded and asynchronous sample submission
     :return:
     """
-    t = ThunderstormAPI(host=THOR_THUNDERSTORM_HOST, port=THOR_THUNDERSTORM_PORT)
+    t = ThunderstormAPI(host=THUNDERSTORM_HOST, port=THUNDERSTORM_PORT)
     assert len(SAMPLES_2) > 0
     status1 = t.get_status()
     results = t.scan_multi(SAMPLES_2, asyn=True)
@@ -62,4 +62,3 @@ def test_sample_multi_async_2():
         sample_res = t.get_async_result(id=r['id'])
         assert 'status' in sample_res
         assert sample_res != {}
-

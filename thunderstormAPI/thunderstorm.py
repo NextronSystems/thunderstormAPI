@@ -2,7 +2,7 @@
 # -*- coding: iso-8859-1 -*-
 # -*- coding: utf-8 -*-
 #
-# THOR Service API Client
+# THOR Thunderstorm API Client
 # Florian Roth
 
 import time
@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 API_CHECK_URI = '/api/check'
 API_SUBMIT_URI_ASYNC = '/api/checkAsync'
@@ -101,17 +101,22 @@ class ThunderstormAPI(object):
         abs_path = path.abspath(filepath)
         try:
             with open(filepath, 'rb') as f:
-                headers = {'User-Agent': "THOR Thunderstorm API Client %s" % __version__}
-                files = {"file": (abs_path, f.read(), 'application/octet-stream')}
+                headers = {'User-Agent': f"THOR Thunderstorm API Client {__version__}"}
+                files = {"file": (abs_path, f, 'application/octet-stream')}
 
-                # Try until you succeed
                 submit_file = True
                 while submit_file:
                     try:
                         if trace:
-                            logger.debug("SUBMIT > %s" % abs_path)
-                        resp = requests.post(url=url, headers=headers, files=files, proxies=self.proxies,
-                                             verify=self.verify_ssl, stream=True)
+                            logger.debug("SUBMIT > %s", abs_path)
+                        resp = requests.post(
+                            url=url,
+                            headers=headers,
+                            files=files,
+                            proxies=self.proxies,
+                            verify=self.verify_ssl,
+                            stream=True
+                        )
                     except Exception as e:
                         logger.debug("Traceback:\n%s", traceback.format_exc())
                         logger.error("Cannot submit %s ERROR: %s", filepath, str(e))
