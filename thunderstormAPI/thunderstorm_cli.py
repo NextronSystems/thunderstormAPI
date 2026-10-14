@@ -159,8 +159,12 @@ def main():
                 av_scan_time = "N/A"
                 if 'avg_scan_time_milliseconds' in status:
                     av_scan_time = "%sms" % status['avg_scan_time_milliseconds']
+                # THOR 11 no longer reports the uptime
+                uptime = "N/A"
+                if 'uptime_seconds' in status:
+                    uptime = time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_seconds'])))
                 logger.info("Thunderstorm service stats UPTIME: %s SCANNED_SAMPLES: %d AVG_SCAN_TIME: %s" % (
-                    time.strftime('%Hh:%Mm:%Ss', time.gmtime(int(status['uptime_seconds']))),
+                    uptime,
                     int(status['scanned_samples']),
                     av_scan_time
                 ))
@@ -246,27 +250,29 @@ def main():
                                 if 'status' not in result:
                                     # Process all matches
                                     for match in result:
+                                        # Support both THOR 10 thunderstorm output and jsonv3
+                                        level = match.get('level') or match.get('meta', {}).get('level')
                                         # Lookup the level value from the static LEVEL dictionary
-                                        if 'level' not in match:
+                                        if level not in LEVELS:
                                             logger.error(
                                                 "Something is wrong with the match object! Cannot process it: %s" % match)
                                             continue
-                                        m_level = LEVELS[match['level']]
+                                        m_level = LEVELS[level]
                                         # Original filename
-                                        orig_name = match['context']['file']
+                                        orig_name = match.get('context', {}).get('file') or match.get('subject', {}).get('path')
                                         # If the match level is higher or equal to minimum level to report
                                         if m_level >= int(args.min_level):
                                             match_string = "Result returned for FILE: %s MATCH: %s" % (orig_name, match)
-                                            if match['level']:
-                                                if match['level'] == 'Debug':
+                                            if level:
+                                                if level == 'Debug':
                                                     logger.debug(match_string)
-                                                if match['level'] == 'Info':
+                                                if level == 'Info':
                                                     logger.debug(match_string)
-                                                if match['level'] == 'Notice':
+                                                if level == 'Notice':
                                                     logger.info(match_string)
-                                                if match['level'] == 'Warning':
+                                                if level == 'Warning':
                                                     logger.warning(match_string)
-                                                if match['level'] == 'Alert':
+                                                if level == 'Alert':
                                                     logger.critical(match_string)
 
                 logger.info("Finished submission FOUND: %d SELECTED: %d PROCESSED: %d" % (num_found, num_selected, num_processed))
