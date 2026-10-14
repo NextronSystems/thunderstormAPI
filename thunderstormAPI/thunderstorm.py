@@ -154,11 +154,11 @@ class ThunderstormAPI(object):
                     # Process the JSON response
                     result = json.loads(content)
 
-                    # Add the original file
-                    # in synchronous results
+                    # Add the original file in synchronous results
                     if not asyn:
-                        if len(result) > 0:
-                            for r in result:
+                        for r in result:
+                            # THOR 10 events carry a context; THOR 11 (log v3) events name the file in 'subject'
+                            if 'context' in r:
                                 r['context']['file'] = abs_path
                     # in asynchronous results
                     else:
@@ -259,7 +259,8 @@ class ThunderstormAPI(object):
         try:
             jresult = json.loads(r.text)
             # Wrong JSON response
-            if 'uptime_seconds' not in jresult:
+            # 'uptime_seconds' only exists in THOR 10, 'scanned_samples' in THOR 10 and 11
+            if 'scanned_samples' not in jresult:
                 return {"status": "error", "message": "JSON content is not the expected one",
                         "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
