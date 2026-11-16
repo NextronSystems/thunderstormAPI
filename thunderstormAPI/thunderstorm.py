@@ -154,12 +154,14 @@ class ThunderstormAPI(object):
                     # Process the JSON response
                     result = json.loads(content)
 
-                    # Add the original file
-                    # in synchronous results
+                    # Add the original file in synchronous results
                     if not asyn:
-                        if len(result) > 0:
-                            for r in result:
+                        for r in result:
+                            # THOR 10 events do not contain the file path.
+                            # We add it to the context as a small enhancement.
+                            if 'context' in r:
                                 r['context']['file'] = abs_path
+                            # THOR 11 (log v3) events do contain the file path (in 'subject'), so we do not need to do anything here
                     # in asynchronous results
                     else:
                         result['file'] = abs_path
@@ -238,17 +240,19 @@ class ThunderstormAPI(object):
             return {'status': 'error', 'message': str(e)}
         return jresult
 
-    def get_status(self, debug=False):
+    def get_status(self, debug=False, timeout=10):
         """
         Retrieve the service status
         :param debug:
+        :param timeout: seconds to wait for the connection and for the response
         :return:
         """
         url = "{}://{}:{}{}".format(self.method, self.host, self.port, API_STATUS_URI)
         try:
             r = requests.get(url,
                              proxies=self.proxies,
-                             verify=self.verify_ssl)
+                             verify=self.verify_ssl,
+                             timeout=timeout)
         except requests.exceptions.ConnectionError as e:
             logger.debug("Traceback:\n%s", traceback.format_exc())
             logger.error("Cannot connect to %s", url)
@@ -259,7 +263,8 @@ class ThunderstormAPI(object):
         try:
             jresult = json.loads(r.text)
             # Wrong JSON response
-            if 'uptime_seconds' not in jresult:
+            # 'uptime_seconds' only exists in THOR 10, 'scanned_samples' in THOR 10 and 11
+            if 'scanned_samples' not in jresult:
                 return {"status": "error", "message": "JSON content is not the expected one",
                         "content": json.dumps(str(r.content[:128]))}
         except json.JSONDecodeError as e:
